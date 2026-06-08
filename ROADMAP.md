@@ -30,7 +30,7 @@ compilable et testable** : on n'avance au suivant que quand le précédent tourn
 
 ---
 
-## Step 2 — Components (records Java 26)
+## ~~Step 2 — Components (records Java 26)~~ ✅
 **But : tous les composants data-only du prompt.**
 - `Position(float x,y,z)`, `Velocity(float x,y,z)`, `Rotation(float yaw, pitch)`
 - `CameraComponent`, `PlayerInput`, `Gravity`
