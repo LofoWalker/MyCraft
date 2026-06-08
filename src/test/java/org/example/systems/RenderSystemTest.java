@@ -13,17 +13,15 @@ class RenderSystemTest {
     @Test
     void skipsRenderWhenNoCameraEntity() {
         World world = new World();
-        // No RenderCamera entity — early return before touching shader/mesh
-        RenderSystem system = new RenderSystem(null, null);
+        RenderSystem system = new RenderSystem(null);
         assertDoesNotThrow(() -> system.update(world, 0.016f));
     }
 
     @Test
     void skipsRenderForEntityWithoutRenderCamera() {
         World world = new World();
-        Entity other = world.create();
-        // Entity exists but has no RenderCamera component
-        RenderSystem system = new RenderSystem(null, null);
+        world.create(); // entity with no RenderCamera
+        RenderSystem system = new RenderSystem(null);
         assertDoesNotThrow(() -> system.update(world, 0.016f));
     }
 
@@ -35,7 +33,6 @@ class RenderSystemTest {
         Matrix4f proj = new Matrix4f();
         world.add(cam, new RenderCamera(view, proj));
 
-        // Confirm the ECS query finds the camera — render itself requires a GL context
         int[] cameras = world.query(RenderCamera.class);
         assertEquals(1, cameras.length);
         RenderCamera rc = world.get(new Entity(cameras[0]), RenderCamera.class).orElseThrow();
@@ -53,7 +50,6 @@ class RenderSystemTest {
 
         int[] cameras = world.query(RenderCamera.class);
         assertEquals(2, cameras.length);
-        // RenderSystem always picks cameras[0] — verify query returns both
         assertTrue(cameras[0] == cam1.id() || cameras[0] == cam2.id());
     }
 }

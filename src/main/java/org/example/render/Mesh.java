@@ -55,6 +55,10 @@ public final class Mesh implements AutoCloseable {
         return new Mesh(buildCubeVertices(), buildCubeIndices());
     }
 
+    public static Mesh create(float[] vertices, int[] indices) {
+        return new Mesh(vertices, indices);
+    }
+
     // Package-private: pure geometry data, no OpenGL — testable without a GL context
     static float[] buildCubeVertices() {
         return new float[] {

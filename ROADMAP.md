@@ -63,7 +63,7 @@ compilable et testable** : on n'avance au suivant que quand le précédent tourn
 
 ---
 
-## Step 5 — Input & contrôleur FPS (sans collision)
+## ~~Step 5 — Input & contrôleur FPS (sans collision)~~ ✅
 **But : voler librement dans la scène.**
 - `InputSystem` : capture clavier (WASD, espace) + souris (delta) via GLFW callbacks, curseur capturé.
 - Écrit dans `PlayerInput`.
@@ -74,7 +74,7 @@ compilable et testable** : on n'avance au suivant que quand le précédent tourn
 
 ---
 
-## Step 6 — Données voxel & un chunk
+## ~~Step 6 — Données voxel & un chunk~~ ✅
 **But : structure de stockage d'un chunk + rendu d'un chunk plein.**
 - `VoxelChunkData` : `byte[]` de block IDs (ex. 16×16×16 ou 32³), indexation `x + y*S + z*S*S`.
 - Constantes monde (taille chunk, IDs de blocs : air, terre, herbe, pierre…).
