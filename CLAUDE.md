@@ -50,10 +50,10 @@ InputSystem → PhysicsSystem → CollisionSystem → MovementSystem
 | 3 | Game loop & fixed timestep | ✅ Done |
 | 4 | Rendu OpenGL de base + Caméra | ✅ Done |
 | 5 | Input & contrôleur FPS (noclip) | ✅ Done |
-| 6 | Données voxel & rendu d'un chunk | ⬜ Next |
-| 7 | Meshing de chunk (face culling) | ⬜ |
-| 8 | Génération procédurale (Perlin/Simplex) | ⬜ |
-| 9 | Physique & gravité | ⬜ |
+| 6 | Données voxel & rendu d'un chunk | ✅ Done |
+| 7 | Meshing de chunk (face culling) | ✅ Done |
+| 8 | Génération procédurale (Perlin/Simplex) | ✅ Done |
+| 9 | Physique & gravité | ⬜ Next |
 | 10 | Collision AABB vs voxels | ⬜ |
 | 11 | Chunks dynamiques (streaming + virtual threads) | ⬜ |
 | 12 | Polish & perfs | ⬜ |

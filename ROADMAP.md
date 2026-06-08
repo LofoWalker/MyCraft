@@ -95,7 +95,7 @@ compilable et testable** : on n'avance au suivant que quand le précédent tourn
 
 ---
 
-## Step 8 — Génération procédurale
+## ~~Step 8 — Génération procédurale~~ ✅
 **But : terrain type Minecraft.**
 - `WorldGenSystem` : bruit **Perlin/Simplex** (height map) → remplit les `VoxelChunkData`.
 - Couches : pierre / terre / herbe selon la hauteur.

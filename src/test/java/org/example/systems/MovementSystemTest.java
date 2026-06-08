@@ -47,7 +47,7 @@ class MovementSystemTest {
         Position pos = world.get(player, Position.class).orElseThrow();
         assertEquals(0f,   pos.x(), 1e-4f);
         assertEquals(0f,   pos.y(), 1e-4f);
-        assertEquals(-5f,  pos.z(), 1e-4f);  // MOVE_SPEED * dt = 5 * 1
+        assertEquals(-50f, pos.z(), 1e-4f);  // MOVE_SPEED * dt = 50 * 1
     }
 
     @Test
@@ -55,7 +55,7 @@ class MovementSystemTest {
         input(false, true, false, false, false, 0f, 0f);
         system.update(world, 1.0f);
         Position pos = world.get(player, Position.class).orElseThrow();
-        assertEquals(5f, pos.z(), 1e-4f);
+        assertEquals(50f, pos.z(), 1e-4f);
     }
 
     @Test
@@ -63,7 +63,7 @@ class MovementSystemTest {
         input(false, false, false, false, true, 0f, 0f);
         system.update(world, 1.0f);
         Position pos = world.get(player, Position.class).orElseThrow();
-        assertEquals(5f, pos.y(), 1e-4f);
+        assertEquals(50f, pos.y(), 1e-4f);
     }
 
     @Test
@@ -73,7 +73,7 @@ class MovementSystemTest {
         system.update(world, 1.0f);
         Position pos = world.get(player, Position.class).orElseThrow();
         float dist = (float) Math.sqrt(pos.x() * pos.x() + pos.y() * pos.y() + pos.z() * pos.z());
-        assertEquals(5f, dist, 1e-4f);
+        assertEquals(50f, dist, 1e-4f);
     }
 
     @Test

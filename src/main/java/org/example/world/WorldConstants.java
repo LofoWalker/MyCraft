@@ -10,4 +10,8 @@ public final class WorldConstants {
     public static final byte BLOCK_STONE = 1;
     public static final byte BLOCK_DIRT  = 2;
     public static final byte BLOCK_GRASS = 3;
+
+    public static final long WORLD_SEED          = 42L;
+    public static final int  TERRAIN_BASE_HEIGHT = 7;
+    public static final int  TERRAIN_AMPLITUDE   = 5;
 }

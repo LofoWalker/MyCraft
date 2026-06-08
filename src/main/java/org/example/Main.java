@@ -22,12 +22,12 @@ public class Main {
         SystemScheduler renderScheduler = new SystemScheduler();
 
         Entity player = world.create();
-        world.add(player, new Position(8f, 14f, 24f));
-        world.add(player, new Rotation(0f, -20f));
+        world.add(player, new Position(8f, 20f, 8f));
+        world.add(player, new Rotation(-30f, -20f));
         world.add(player, new CameraComponent(70f, 0.1f, 1000f));
         world.add(player, new PlayerInput(false, false, false, false, false, 0f, 0f));
 
-        spawnChunk(world);
+        spawnChunks(world);
 
         window.captureCursor();
 
@@ -38,6 +38,7 @@ public class Main {
             simScheduler.add(new MovementSystem());
 
             renderScheduler.add(new CameraSystem(window.getAspectRatio()));
+            renderScheduler.add(new WorldGenSystem(WorldConstants.WORLD_SEED));
             renderScheduler.add(chunkMesher);
             renderScheduler.add(new RenderSystem(shader));
 
@@ -45,23 +46,20 @@ public class Main {
         }
     }
 
-    private static void spawnChunk(World world) {
-        Entity chunk = world.create();
-        world.add(chunk, new Position(0f, 0f, 0f));
-        world.add(chunk, new ChunkComponent(0, 0));
-        world.add(chunk, fillTerrain());
-    }
-
-    static VoxelChunkData fillTerrain() {
-        int S = WorldConstants.CHUNK_SIZE;
-        VoxelChunkData data = VoxelChunkData.empty();
-        for (int bx = 0; bx < S; bx++) {
-            for (int bz = 0; bz < S; bz++) {
-                for (int by = 0; by < 6; by++) data.set(bx, by, bz, WorldConstants.BLOCK_STONE);
-                for (int by = 6; by < 8; by++) data.set(bx, by, bz, WorldConstants.BLOCK_DIRT);
-                data.set(bx, 8, bz, WorldConstants.BLOCK_GRASS);
+    static void spawnChunks(World world) {
+        int radius = 3;
+        for (int cx = -radius; cx <= radius; cx++) {
+            for (int cz = -radius; cz <= radius; cz++) {
+                spawnEmptyChunk(world, cx, cz);
             }
         }
-        return data;
+    }
+
+    private static void spawnEmptyChunk(World world, int cx, int cz) {
+        int S = WorldConstants.CHUNK_SIZE;
+        Entity chunk = world.create();
+        world.add(chunk, new Position((float) (cx * S), 0f, (float) (cz * S)));
+        world.add(chunk, new ChunkComponent(cx, cz));
+        world.add(chunk, VoxelChunkData.empty());
     }
 }
