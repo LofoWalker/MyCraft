@@ -14,7 +14,8 @@ public final class GameLoop {
 
     private GameLoop() {}
 
-    public static void run(Window window, World world, SystemScheduler scheduler) {
+    public static void run(Window window, World world,
+                           SystemScheduler simScheduler, SystemScheduler renderScheduler) {
         double previous    = glfwGetTime();
         double accumulator = 0.0;
         double fpsTimer    = 0.0;
@@ -27,11 +28,12 @@ public final class GameLoop {
 
             accumulator += elapsed;
             while (accumulator >= FIXED_DT) {
-                scheduler.update(world, (float) FIXED_DT);
+                simScheduler.update(world, (float) FIXED_DT);
                 accumulator -= FIXED_DT;
             }
 
             window.clear();
+            renderScheduler.update(world, (float) elapsed);
             window.swapBuffers();
             window.pollEvents();
 

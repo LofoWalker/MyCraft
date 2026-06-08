@@ -52,7 +52,7 @@ compilable et testable** : on n'avance au suivant que quand le précédent tourn
 
 ---
 
-## Step 4 — Rendu OpenGL de base + Caméra
+## ~~Step 4 — Rendu OpenGL de base + Caméra~~ ✅
 **But : afficher un cube en 3D avec une caméra perspective.**
 - `Shader` (compile/link vertex+fragment, uniforms).
 - `Mesh` (VAO/VBO/EBO), rendu d'un cube test.

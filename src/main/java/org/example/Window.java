@@ -79,6 +79,8 @@ public class Window implements AutoCloseable {
         glfwSwapInterval(GLFW_TRUE);
         glfwShowWindow(handle);
         GL.createCapabilities();
+        glEnable(GL_DEPTH_TEST);
+        glEnable(GL_CULL_FACE);
         glClearColor(0.1f, 0.1f, 0.15f, 1.0f);
     }
 
@@ -107,7 +109,11 @@ public class Window implements AutoCloseable {
         if (cb != null) cb.free();
     }
 
-    public long getHandle() {
-        return handle;
-    }
+    public long getHandle() { return handle; }
+
+    public int getWidth() { return width; }
+
+    public int getHeight() { return height; }
+
+    public float getAspectRatio() { return (float) width / height; }
 }

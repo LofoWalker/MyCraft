@@ -3,6 +3,7 @@ package org.example.components;
 import org.example.ecs.Entity;
 import org.example.ecs.World;
 import org.example.world.WorldConstants;
+import org.joml.Matrix4f;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -96,6 +97,41 @@ class ComponentsTest {
         VoxelChunkData stored = world.get(chunk, VoxelChunkData.class).orElseThrow();
         assertEquals(WorldConstants.BLOCK_GRASS, stored.get(1, 0, 2));
         assertEquals(WorldConstants.BLOCK_AIR,   stored.get(0, 0, 0));
+    }
+
+    @Test
+    void renderCameraAttachableAndReadable() {
+        Matrix4f view = new Matrix4f().translation(1f, 2f, 3f);
+        Matrix4f proj = new Matrix4f().perspective((float) Math.toRadians(70), 16f / 9f, 0.1f, 1000f);
+        world.add(player, new RenderCamera(view, proj));
+
+        RenderCamera rc = world.get(player, RenderCamera.class).orElseThrow();
+        assertEquals(view, rc.view());
+        assertEquals(proj, rc.projection());
+    }
+
+    @Test
+    void renderCameraHoldsDistinctViewAndProjection() {
+        Matrix4f view = new Matrix4f();
+        Matrix4f proj = new Matrix4f().translation(5f, 0f, 0f);
+        RenderCamera rc = new RenderCamera(view, proj);
+
+        assertNotSame(rc.view(), rc.projection());
+        assertEquals(0f, rc.view().m30());
+        assertEquals(5f, rc.projection().m30());
+    }
+
+    @Test
+    void renderCameraOverwriteUpdatesMatrices() {
+        world.add(player, new RenderCamera(new Matrix4f(), new Matrix4f()));
+
+        Matrix4f view2 = new Matrix4f().translation(9f, 0f, 0f);
+        Matrix4f proj2 = new Matrix4f().translation(0f, 9f, 0f);
+        world.add(player, new RenderCamera(view2, proj2));
+
+        RenderCamera rc = world.get(player, RenderCamera.class).orElseThrow();
+        assertEquals(9f, rc.view().m30(), 1e-5f);
+        assertEquals(9f, rc.projection().m31(), 1e-5f);
     }
 
     @Test
