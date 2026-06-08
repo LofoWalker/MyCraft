@@ -86,7 +86,7 @@ class ChunkMeshingSystemTest {
     @Test
     void blockAtChunkBorderExposesAllSixFaces() {
         VoxelChunkData data = VoxelChunkData.empty();
-        int maxIdx = WorldConstants.CHUNK_SIZE - 1;
+        int maxIdx = WorldConstants.CHUNK_SIZE_XZ - 1;
         data.set(maxIdx, 0, 0, WorldConstants.BLOCK_STONE);
 
         ChunkMeshingSystem.Geometry geo = ChunkMeshingSystem.buildGeometry(data);

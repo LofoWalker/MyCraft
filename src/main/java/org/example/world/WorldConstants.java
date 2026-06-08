@@ -4,7 +4,10 @@ public final class WorldConstants {
 
     private WorldConstants() {}
 
-    public static final int CHUNK_SIZE = 64;
+    // Horizontal footprint of a chunk; the vertical extent is the full world height.
+    // A chunk is therefore a column CHUNK_SIZE_XZ × WORLD_HEIGHT × CHUNK_SIZE_XZ.
+    public static final int CHUNK_SIZE_XZ = 32;
+    public static final int WORLD_HEIGHT  = 256;
 
     public static final int CHUNK_LOAD_RADIUS          = 3;
     public static final int CHUNK_UNLOAD_RADIUS        = 5;
@@ -19,13 +22,13 @@ public final class WorldConstants {
     public static final byte BLOCK_WATER  = 6;
 
     public static final long  WORLD_SEED          = 42L;
-    public static final int   TERRAIN_BASE_HEIGHT = 10;
-    public static final int   TERRAIN_AMPLITUDE   = 8;
-    public static final int   MOUNTAIN_AMPLITUDE  = 48;
+    public static final int   TERRAIN_BASE_HEIGHT = 40;
+    public static final int   TERRAIN_AMPLITUDE   = 32;
+    public static final int   MOUNTAIN_AMPLITUDE  = 192;
 
     // Valleys below this fill with water; surfaces at/above ROCK_LEVEL expose bare stone.
-    public static final int   WATER_LEVEL = 10;
-    public static final int   ROCK_LEVEL  = 26;
+    public static final int   WATER_LEVEL = 40;
+    public static final int   ROCK_LEVEL  = 104;
 
     // One column in TREE_RARITY (statistically) sprouts a tree.
     public static final int TREE_RARITY            = 160;

@@ -41,7 +41,7 @@ public final class WorldGenSystem implements GameSystem {
 
     // Package-private: pure data transform — testable without ECS context
     void generateTerrain(VoxelChunkData data, int chunkX, int chunkZ) {
-        int S = WorldConstants.CHUNK_SIZE;
+        int S = WorldConstants.CHUNK_SIZE_XZ;
         for (int bx = 0; bx < S; bx++) {
             for (int bz = 0; bz < S; bz++) {
                 double worldX  = (double) (chunkX * S + bx);
@@ -55,7 +55,7 @@ public final class WorldGenSystem implements GameSystem {
     // Package-private: pure feature pass — runs after terrain, testable without ECS context.
     // Trees stay inside chunk bounds (no cross-chunk writes), leaving a thin treeless seam at borders.
     void plantTrees(VoxelChunkData data, int chunkX, int chunkZ) {
-        int S      = WorldConstants.CHUNK_SIZE;
+        int S      = WorldConstants.CHUNK_SIZE_XZ;
         int margin = WorldConstants.TREE_CANOPY_RADIUS;
         for (int bx = margin; bx < S - margin; bx++) {
             for (int bz = margin; bz < S - margin; bz++) {
@@ -80,7 +80,7 @@ public final class WorldGenSystem implements GameSystem {
 
     private static void growTree(VoxelChunkData data, int bx, int bz, int surfaceY, int trunkHeight) {
         int trunkTop = surfaceY + trunkHeight;
-        if (trunkTop + 2 >= WorldConstants.CHUNK_SIZE) return; // canopy would overflow the chunk top
+        if (trunkTop + 2 >= WorldConstants.WORLD_HEIGHT) return; // canopy would overflow the world top
         for (int y = surfaceY + 1; y <= trunkTop; y++) {
             data.set(bx, y, bz, WorldConstants.BLOCK_WOOD);
         }
@@ -116,7 +116,7 @@ public final class WorldGenSystem implements GameSystem {
     private int computeSurfaceY(double worldX, double worldZ) {
         double hills = noise.fractal(worldX * NOISE_SCALE, worldZ * NOISE_SCALE, OCTAVES, PERSISTENCE, LACUNARITY);
         double base  = WorldConstants.TERRAIN_BASE_HEIGHT + hills * WorldConstants.TERRAIN_AMPLITUDE;
-        return clampToChunk((int) Math.round(base + mountainHeight(worldX, worldZ)));
+        return clampToWorld((int) Math.round(base + mountainHeight(worldX, worldZ)));
     }
 
     // Only the positive half of the mask lifts terrain: lowlands (mask <= 0) stay flat,
@@ -126,13 +126,12 @@ public final class WorldGenSystem implements GameSystem {
         return Math.max(0.0, mask) * WorldConstants.MOUNTAIN_AMPLITUDE;
     }
 
-    private static int clampToChunk(int y) {
-        return Math.max(1, Math.min(WorldConstants.CHUNK_SIZE - 1, y));
+    private static int clampToWorld(int y) {
+        return Math.max(1, Math.min(WorldConstants.WORLD_HEIGHT - 1, y));
     }
 
     private static void fillColumn(VoxelChunkData data, int bx, int bz, int surfaceY) {
-        int S   = WorldConstants.CHUNK_SIZE;
-        int top = Math.min(S - 1, Math.max(surfaceY, WorldConstants.WATER_LEVEL));
+        int top = Math.min(WorldConstants.WORLD_HEIGHT - 1, Math.max(surfaceY, WorldConstants.WATER_LEVEL));
         for (int by = 0; by <= top; by++) {
             byte block = classifyBlock(by, surfaceY);
             if (block != WorldConstants.BLOCK_AIR) {

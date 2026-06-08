@@ -8,7 +8,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class WorldGenSystemTest {
 
-    private static final int S    = WorldConstants.CHUNK_SIZE;
+    private static final int  SX   = WorldConstants.CHUNK_SIZE_XZ;
+    private static final int  H    = WorldConstants.WORLD_HEIGHT;
     private static final long SEED = WorldConstants.WORLD_SEED;
 
     private final WorldGenSystem gen = new WorldGenSystem(SEED);
@@ -41,8 +42,8 @@ class WorldGenSystemTest {
     @Test
     void columnSurfaceMatchesAltitudeRule() {
         VoxelChunkData data = generated(0, 0);
-        for (int bx = 0; bx < S; bx++) {
-            for (int bz = 0; bz < S; bz++) {
+        for (int bx = 0; bx < SX; bx++) {
+            for (int bz = 0; bz < SX; bz++) {
                 int surface = terrainSurfaceY(data, bx, bz);
                 assertTrue(surface >= 0, "No terrain in column (" + bx + "," + bz + ")");
                 assertEquals(WorldGenSystem.topBlock(surface), data.get(bx, surface, bz),
@@ -54,8 +55,8 @@ class WorldGenSystemTest {
     @Test
     void dirtLayerSitsDirectlyBelowGrass() {
         VoxelChunkData data = generated(0, 0);
-        for (int bx = 0; bx < S; bx++) {
-            for (int bz = 0; bz < S; bz++) {
+        for (int bx = 0; bx < SX; bx++) {
+            for (int bz = 0; bz < SX; bz++) {
                 int surface = terrainSurfaceY(data, bx, bz);
                 if (surface > 0 && data.get(bx, surface, bz) == WorldConstants.BLOCK_GRASS) {
                     assertEquals(WorldConstants.BLOCK_DIRT, data.get(bx, surface - 1, bz),
@@ -68,8 +69,8 @@ class WorldGenSystemTest {
     @Test
     void stoneAppearsDeepBelowSurface() {
         VoxelChunkData data = generated(0, 0);
-        for (int bx = 0; bx < S; bx++) {
-            for (int bz = 0; bz < S; bz++) {
+        for (int bx = 0; bx < SX; bx++) {
+            for (int bz = 0; bz < SX; bz++) {
                 int surface = terrainSurfaceY(data, bx, bz);
                 int deepY = surface - 4;
                 if (deepY >= 0) {
@@ -83,15 +84,15 @@ class WorldGenSystemTest {
     @Test
     void waterFillsValleysUpToSeaLevel() {
         VoxelChunkData data = generated(0, 0);
-        for (int bx = 0; bx < S; bx++) {
-            for (int bz = 0; bz < S; bz++) {
+        for (int bx = 0; bx < SX; bx++) {
+            for (int bz = 0; bz < SX; bz++) {
                 int surface = terrainSurfaceY(data, bx, bz);
                 for (int by = surface + 1; by <= WorldConstants.WATER_LEVEL; by++) {
                     assertEquals(WorldConstants.BLOCK_WATER, data.get(bx, by, bz),
                             "Expected water between surface and sea level at y=" + by);
                 }
                 int airStart = Math.max(surface, WorldConstants.WATER_LEVEL) + 1;
-                for (int by = airStart; by < S; by++) {
+                for (int by = airStart; by < H; by++) {
                     assertEquals(WorldConstants.BLOCK_AIR, data.get(bx, by, bz),
                             "Expected air above terrain/sea level at y=" + by);
                 }
@@ -107,8 +108,8 @@ class WorldGenSystemTest {
         for (int cx = -4; cx <= 4; cx++) {
             for (int cz = -4; cz <= 4; cz++) {
                 VoxelChunkData data = generated(cx, cz);
-                for (int bx = 0; bx < S && !(foundWater && foundPeak); bx++)
-                    for (int bz = 0; bz < S; bz++) {
+                for (int bx = 0; bx < SX && !(foundWater && foundPeak); bx++)
+                    for (int bz = 0; bz < SX; bz++) {
                         int surface = terrainSurfaceY(data, bx, bz);
                         if (data.get(bx, WorldConstants.WATER_LEVEL, bz) == WorldConstants.BLOCK_WATER) foundWater = true;
                         if (surface >= WorldConstants.ROCK_LEVEL) foundPeak = true;
@@ -137,9 +138,9 @@ class WorldGenSystemTest {
         VoxelChunkData b = VoxelChunkData.empty();
         gen2.generateTerrain(b, 2, -1);
 
-        for (int y = 0; y < S; y++)
-            for (int z = 0; z < S; z++)
-                for (int x = 0; x < S; x++)
+        for (int y = 0; y < H; y++)
+            for (int z = 0; z < SX; z++)
+                for (int x = 0; x < SX; x++)
                     assertEquals(a.get(x, y, z), b.get(x, y, z),
                             "Mismatch at (" + x + "," + y + "," + z + ")");
     }
@@ -150,8 +151,8 @@ class WorldGenSystemTest {
         int firstSurface = terrainSurfaceY(data, 0, 0);
         boolean foundVariation = false;
         outer:
-        for (int bx = 0; bx < S; bx++) {
-            for (int bz = 0; bz < S; bz++) {
+        for (int bx = 0; bx < SX; bx++) {
+            for (int bz = 0; bz < SX; bz++) {
                 if (terrainSurfaceY(data, bx, bz) != firstSurface) {
                     foundVariation = true;
                     break outer;
@@ -183,8 +184,8 @@ class WorldGenSystemTest {
     @Test
     void trunksRiseFromGrass() {
         VoxelChunkData data = firstChunkWithTree();
-        for (int bx = 0; bx < S; bx++) {
-            for (int bz = 0; bz < S; bz++) {
+        for (int bx = 0; bx < SX; bx++) {
+            for (int bz = 0; bz < SX; bz++) {
                 int lowestWood = lowestWoodY(data, bx, bz);
                 if (lowestWood < 0) continue;
                 assertEquals(WorldConstants.BLOCK_GRASS, data.get(bx, lowestWood - 1, bz),
@@ -225,7 +226,7 @@ class WorldGenSystemTest {
     }
 
     private static int lowestWoodY(VoxelChunkData data, int bx, int bz) {
-        for (int by = 1; by < S; by++) {
+        for (int by = 1; by < H; by++) {
             if (data.get(bx, by, bz) == WorldConstants.BLOCK_WOOD) return by;
         }
         return -1;
@@ -233,7 +234,7 @@ class WorldGenSystemTest {
 
     /** Returns the y of the highest solid terrain block (ignoring air and water), or -1 if none. */
     private static int terrainSurfaceY(VoxelChunkData data, int bx, int bz) {
-        for (int by = S - 1; by >= 0; by--) {
+        for (int by = H - 1; by >= 0; by--) {
             byte b = data.get(bx, by, bz);
             if (b != WorldConstants.BLOCK_AIR && b != WorldConstants.BLOCK_WATER) return by;
         }

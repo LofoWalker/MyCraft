@@ -59,11 +59,12 @@ public final class ChunkMeshingSystem implements GameSystem, AutoCloseable {
 
     // Package-private: pure data transform — testable without GL context
     static Geometry buildGeometry(VoxelChunkData data) {
-        int S = WorldConstants.CHUNK_SIZE;
-        MeshBuilder builder = new MeshBuilder(S * S * S);
-        for (int y = 0; y < S; y++)
-            for (int z = 0; z < S; z++)
-                for (int x = 0; x < S; x++) {
+        int SX = WorldConstants.CHUNK_SIZE_XZ;
+        int H  = WorldConstants.WORLD_HEIGHT;
+        MeshBuilder builder = new MeshBuilder(SX * SX * H);
+        for (int y = 0; y < H; y++)
+            for (int z = 0; z < SX; z++)
+                for (int x = 0; x < SX; x++) {
                     byte block = data.get(x, y, z);
                     if (block != WorldConstants.BLOCK_AIR) appendVisibleFaces(builder, data, x, y, z, block);
                 }
@@ -82,8 +83,8 @@ public final class ChunkMeshingSystem implements GameSystem, AutoCloseable {
     }
 
     private static boolean isAirOrOutOfBounds(VoxelChunkData data, int x, int y, int z) {
-        int S = WorldConstants.CHUNK_SIZE;
-        if (x < 0 || x >= S || y < 0 || y >= S || z < 0 || z >= S) return true;
+        int SX = WorldConstants.CHUNK_SIZE_XZ;
+        if (x < 0 || x >= SX || y < 0 || y >= WorldConstants.WORLD_HEIGHT || z < 0 || z >= SX) return true;
         return data.get(x, y, z) == WorldConstants.BLOCK_AIR;
     }
 

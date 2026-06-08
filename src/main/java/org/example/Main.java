@@ -24,7 +24,7 @@ public class Main {
         SystemScheduler renderScheduler = new SystemScheduler();
 
         Entity player = world.create();
-        world.add(player, new Position(8f, 80f, 8f));
+        world.add(player, new Position(8f, 250f, 8f));
         world.add(player, new Rotation(-30f, -20f));
         world.add(player, new Velocity(0f, 0f, 0f));
         world.add(player, new Gravity(WorldConstants.GRAVITY));

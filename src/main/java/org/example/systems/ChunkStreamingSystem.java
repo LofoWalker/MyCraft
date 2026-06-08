@@ -64,7 +64,7 @@ public final class ChunkStreamingSystem implements GameSystem, AutoCloseable {
     }
 
     private void spawnChunk(World world, int cx, int cz) {
-        int s = WorldConstants.CHUNK_SIZE;
+        int s = WorldConstants.CHUNK_SIZE_XZ;
         Entity entity = world.create();
         world.add(entity, new ChunkComponent(cx, cz));
         world.add(entity, new Position((float) (cx * s), 0f, (float) (cz * s)));
@@ -137,7 +137,7 @@ public final class ChunkStreamingSystem implements GameSystem, AutoCloseable {
     }
 
     static int worldToChunk(float worldCoord) {
-        return Math.floorDiv((int) Math.floor(worldCoord), WorldConstants.CHUNK_SIZE);
+        return Math.floorDiv((int) Math.floor(worldCoord), WorldConstants.CHUNK_SIZE_XZ);
     }
 
     static boolean shouldUnload(long key, int playerCx, int playerCz, int unloadRadius) {

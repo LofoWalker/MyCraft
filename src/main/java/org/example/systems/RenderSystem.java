@@ -49,10 +49,11 @@ public final class RenderSystem implements GameSystem {
     }
 
     private boolean isChunkVisible(Position pos) {
-        float s = WorldConstants.CHUNK_SIZE;
+        float sx = WorldConstants.CHUNK_SIZE_XZ;
+        float h  = WorldConstants.WORLD_HEIGHT;
         return frustum.isBoxVisible(
-            pos.x(),     pos.y(),     pos.z(),
-            pos.x() + s, pos.y() + s, pos.z() + s
+            pos.x(),      pos.y(),     pos.z(),
+            pos.x() + sx, pos.y() + h, pos.z() + sx
         );
     }
 }

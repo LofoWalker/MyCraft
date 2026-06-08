@@ -7,7 +7,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class ChunkStreamingSystemTest {
 
-    private static final int S = WorldConstants.CHUNK_SIZE;
+    private static final int S = WorldConstants.CHUNK_SIZE_XZ;
 
     @Test
     void worldToChunkMapsCoordinatesInsideAChunkToTheSameIndex() {

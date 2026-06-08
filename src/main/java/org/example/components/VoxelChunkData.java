@@ -5,14 +5,22 @@ import org.example.world.WorldConstants;
 public record VoxelChunkData(byte[] blocks) {
 
     public static VoxelChunkData empty() {
-        return new VoxelChunkData(new byte[WorldConstants.CHUNK_SIZE * WorldConstants.CHUNK_SIZE * WorldConstants.CHUNK_SIZE]);
+        int sx = WorldConstants.CHUNK_SIZE_XZ;
+        return new VoxelChunkData(new byte[sx * sx * WorldConstants.WORLD_HEIGHT]);
     }
 
     public byte get(int x, int y, int z) {
-        return blocks[x + y * WorldConstants.CHUNK_SIZE + z * WorldConstants.CHUNK_SIZE * WorldConstants.CHUNK_SIZE];
+        return blocks[index(x, y, z)];
     }
 
     public void set(int x, int y, int z, byte blockId) {
-        blocks[x + y * WorldConstants.CHUNK_SIZE + z * WorldConstants.CHUNK_SIZE * WorldConstants.CHUNK_SIZE] = blockId;
+        blocks[index(x, y, z)] = blockId;
+    }
+
+    // Y is the outermost dimension: each horizontal layer is contiguous, which keeps
+    // vertical passes (cave carving, ore placement) cache-friendly.
+    private static int index(int x, int y, int z) {
+        int sx = WorldConstants.CHUNK_SIZE_XZ;
+        return x + z * sx + y * sx * sx;
     }
 }

@@ -174,13 +174,13 @@ public final class CollisionSystem implements GameSystem {
     }
 
     static boolean isSolid(int wx, int wy, int wz, Map<Long, VoxelChunkData> chunkMap) {
-        if (wy < 0 || wy >= WorldConstants.CHUNK_SIZE) return false;
-        int cx = Math.floorDiv(wx, WorldConstants.CHUNK_SIZE);
-        int cz = Math.floorDiv(wz, WorldConstants.CHUNK_SIZE);
+        if (wy < 0 || wy >= WorldConstants.WORLD_HEIGHT) return false;
+        int cx = Math.floorDiv(wx, WorldConstants.CHUNK_SIZE_XZ);
+        int cz = Math.floorDiv(wz, WorldConstants.CHUNK_SIZE_XZ);
         VoxelChunkData data = chunkMap.get(chunkKey(cx, cz));
         if (data == null) return false;
-        int lx = wx - cx * WorldConstants.CHUNK_SIZE;
-        int lz = wz - cz * WorldConstants.CHUNK_SIZE;
+        int lx = wx - cx * WorldConstants.CHUNK_SIZE_XZ;
+        int lz = wz - cz * WorldConstants.CHUNK_SIZE_XZ;
         byte block = data.get(lx, wy, lz);
         return block != WorldConstants.BLOCK_AIR && block != WorldConstants.BLOCK_WATER;
     }

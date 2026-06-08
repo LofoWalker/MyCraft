@@ -35,7 +35,7 @@ class CollisionSystemTest {
 
     private Map<Long, VoxelChunkData> solidFloorAt(int floorY) {
         VoxelChunkData data = VoxelChunkData.empty();
-        int S = WorldConstants.CHUNK_SIZE;
+        int S = WorldConstants.CHUNK_SIZE_XZ;
         for (int x = 0; x < S; x++)
             for (int z = 0; z < S; z++)
                 data.set(x, floorY, z, WorldConstants.BLOCK_GRASS);
@@ -45,7 +45,7 @@ class CollisionSystemTest {
     }
 
     private Map<Long, VoxelChunkData> solidBlock(int bx, int by, int bz) {
-        int S = WorldConstants.CHUNK_SIZE;
+        int S = WorldConstants.CHUNK_SIZE_XZ;
         int cx = Math.floorDiv(bx, S);
         int cz = Math.floorDiv(bz, S);
         int lx = bx - cx * S;
@@ -67,7 +67,7 @@ class CollisionSystemTest {
     @Test
     void isSolidReturnsFalseOutsideChunkHeight() {
         assertFalse(CollisionSystem.isSolid(0, -1, 0, new HashMap<>()));
-        assertFalse(CollisionSystem.isSolid(0, WorldConstants.CHUNK_SIZE, 0, new HashMap<>()));
+        assertFalse(CollisionSystem.isSolid(0, WorldConstants.WORLD_HEIGHT, 0, new HashMap<>()));
     }
 
     @Test
