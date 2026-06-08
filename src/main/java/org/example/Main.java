@@ -26,6 +26,7 @@ public class Main {
         world.add(player, new Rotation(-30f, -20f));
         world.add(player, new Velocity(0f, 0f, 0f));
         world.add(player, new Gravity(WorldConstants.GRAVITY));
+        world.add(player, new ColliderAABB(0.6f, 1.8f, 0.6f));
         world.add(player, new CameraComponent(70f, 0.1f, 1000f));
         world.add(player, new PlayerInput(false, false, false, false, false, 0f, 0f));
 
@@ -39,6 +40,7 @@ public class Main {
             simScheduler.add(new InputSystem(window));
             simScheduler.add(new PhysicsSystem());
             simScheduler.add(new MovementSystem());
+            simScheduler.add(new CollisionSystem());
 
             renderScheduler.add(new CameraSystem(window.getAspectRatio()));
             renderScheduler.add(new WorldGenSystem(WorldConstants.WORLD_SEED));

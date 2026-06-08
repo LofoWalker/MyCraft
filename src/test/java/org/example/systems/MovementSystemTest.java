@@ -1,5 +1,6 @@
 package org.example.systems;
 
+import org.example.components.Grounded;
 import org.example.components.PlayerInput;
 import org.example.components.Position;
 import org.example.components.Rotation;
@@ -62,25 +63,32 @@ class MovementSystemTest {
     }
 
     @Test
-    void jumpAppliesImpulseOnFirstPress() {
+    void jumpAppliesImpulseOnFirstPressWhenGrounded() {
+        world.add(player, new Grounded());
         input(false, false, false, false, true, 0f, 0f);
         system.update(world, 1.0f);
         Position pos = world.get(player, Position.class).orElseThrow();
-        // Rising edge: vy = JUMP_IMPULSE, pos.y += JUMP_IMPULSE * dt
         assertEquals(WorldConstants.JUMP_IMPULSE * 1.0f, pos.y(), 1e-4f);
     }
 
     @Test
-    void jumpNotRetriggeredWhileHeld() {
+    void jumpDoesNothingWhenNotGrounded() {
+        // No Grounded component — jump key pressed but player is airborne
         input(false, false, false, false, true, 0f, 0f);
         system.update(world, 1.0f);
-        // Second frame: jump still held — vy stays at whatever gravity left it (0 since no PhysicsSystem)
-        input(false, false, false, false, true, 0f, 0f);
-        system.update(world, 1.0f);
-        // vy in second frame = vel.y from first frame = JUMP_IMPULSE (written to Velocity last frame)
-        // pos.y = JUMP_IMPULSE*1 (first frame) + JUMP_IMPULSE*1 (second frame, held)
         Position pos = world.get(player, Position.class).orElseThrow();
-        // Second frame: prevJump=true, so no new impulse; vy = vel.y = JUMP_IMPULSE from stored velocity
+        assertEquals(0f, pos.y(), 1e-4f);
+    }
+
+    @Test
+    void jumpNotRetriggeredWhileHeld() {
+        world.add(player, new Grounded());
+        input(false, false, false, false, true, 0f, 0f);
+        system.update(world, 1.0f);
+        // Second frame: jump still held, prevJump=true → no new impulse; vy = JUMP_IMPULSE from Velocity store
+        input(false, false, false, false, true, 0f, 0f);
+        system.update(world, 1.0f);
+        Position pos = world.get(player, Position.class).orElseThrow();
         assertEquals(WorldConstants.JUMP_IMPULSE * 2.0f, pos.y(), 1e-4f);
     }
 

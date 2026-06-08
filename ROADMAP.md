@@ -114,7 +114,7 @@ compilable et testable** : on n'avance au suivant que quand le précédent tourn
 
 ---
 
-## Step 10 — Collision AABB vs voxels
+## ~~Step 10 — Collision AABB vs voxels~~ ✅
 **But : marcher sur le sol, ne pas traverser les blocs.**
 - `CollisionSystem` : AABB du joueur (`ColliderAABB`) testée contre les blocs solides autour.
 - Résolution axe par axe (swept ou par pénétration), met `Velocity.y=0` au sol.
