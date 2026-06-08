@@ -78,6 +78,7 @@ public final class ChunkStreamingSystem implements GameSystem, AutoCloseable {
         workers.submit(() -> {
             VoxelChunkData data = VoxelChunkData.empty();
             terrain.generateTerrain(data, cx, cz);
+            terrain.plantTrees(data, cx, cz);
             Geometry geometry = ChunkMeshingSystem.buildGeometry(data);
             ready.add(new ChunkResult(key, entityId, data, geometry));
         });

@@ -8,6 +8,8 @@ import org.example.render.Shader;
 import org.example.systems.*;
 import org.example.world.WorldConstants;
 
+import java.util.concurrent.ThreadLocalRandom;
+
 public class Main {
     static void main(String[] args) {
         try (Window window = new Window(1920, 1080, "MyCraft")) {
@@ -22,7 +24,7 @@ public class Main {
         SystemScheduler renderScheduler = new SystemScheduler();
 
         Entity player = world.create();
-        world.add(player, new Position(8f, 20f, 8f));
+        world.add(player, new Position(8f, 80f, 8f));
         world.add(player, new Rotation(-30f, -20f));
         world.add(player, new Velocity(0f, 0f, 0f));
         world.add(player, new Gravity(WorldConstants.GRAVITY));
@@ -32,8 +34,11 @@ public class Main {
 
         window.captureCursor();
 
+        long seed = ThreadLocalRandom.current().nextLong();
+        System.out.println("World seed: " + seed);
+
         try (Shader shader = Shader.fromResources("/shaders/basic.vert", "/shaders/basic.frag");
-             ChunkStreamingSystem chunkStreaming = new ChunkStreamingSystem(WorldConstants.WORLD_SEED)) {
+             ChunkStreamingSystem chunkStreaming = new ChunkStreamingSystem(seed)) {
 
             simScheduler.add(new InputSystem(window));
             simScheduler.add(new FlightControlSystem());

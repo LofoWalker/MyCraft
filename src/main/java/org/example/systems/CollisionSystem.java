@@ -181,7 +181,8 @@ public final class CollisionSystem implements GameSystem {
         if (data == null) return false;
         int lx = wx - cx * WorldConstants.CHUNK_SIZE;
         int lz = wz - cz * WorldConstants.CHUNK_SIZE;
-        return data.get(lx, wy, lz) != WorldConstants.BLOCK_AIR;
+        byte block = data.get(lx, wy, lz);
+        return block != WorldConstants.BLOCK_AIR && block != WorldConstants.BLOCK_WATER;
     }
 
     static long chunkKey(int cx, int cz) {

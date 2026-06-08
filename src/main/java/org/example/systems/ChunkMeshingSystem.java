@@ -94,6 +94,9 @@ public final class ChunkMeshingSystem implements GameSystem, AutoCloseable {
             case WorldConstants.BLOCK_GRASS -> (face == FACE_TOP)
                     ? new float[]{ 0.35f, 0.70f, 0.25f }
                     : new float[]{ 0.55f, 0.35f, 0.15f };
+            case WorldConstants.BLOCK_WOOD   -> new float[]{ 0.40f, 0.26f, 0.13f };
+            case WorldConstants.BLOCK_LEAVES -> new float[]{ 0.18f, 0.50f, 0.16f };
+            case WorldConstants.BLOCK_WATER  -> new float[]{ 0.20f, 0.40f, 0.85f };
             default -> new float[]{ 1.0f, 0.0f, 1.0f }; // magenta = unknown block type
         };
     }
