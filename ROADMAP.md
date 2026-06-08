@@ -124,7 +124,7 @@ compilable et testable** : on n'avance au suivant que quand le précédent tourn
 
 ---
 
-## Step 11 — Chunks dynamiques (streaming)
+## ~~Step 11 — Chunks dynamiques (streaming)~~ ✅
 **But : monde "infini" autour du joueur.**
 - Charger/décharger les chunks dans un rayon autour de la `Position` du joueur.
 - **Virtual Threads (Java 26)** pour : génération de chunks + mesh building en arrière-plan.
@@ -134,12 +134,19 @@ compilable et testable** : on n'avance au suivant que quand le précédent tourn
 
 ---
 
-## Step 12 — Polish & perfs (extensions)
+## ~~Step 12 — Polish & perfs (extensions)~~ ✅
 **But : nettoyer et préparer le scaling.**
 - Séparer clairement **simulation world** et **rendering data** (cf. règles ECS du prompt).
 - Batching par chunk/région, éviter allocations dans les boucles chaudes.
 - Frustum culling (ne pas rendre les chunks hors champ).
 - (Extensions futures : casser/poser des blocs, types de blocs, lumière, sauvegarde monde.)
+
+✅ *Critère : les chunks hors champ ne sont plus dessinés ; la boucle de rendu n'alloue plus par chunk.*
+
+Réalisé :
+- `render/Frustum.java` : 6 plans extraits du view-projection (JOML `FrustumIntersection`), réutilisé en place chaque frame (zéro allocation).
+- `RenderSystem` : test AABB chunk vs frustum → cull des chunks hors champ ; matrices `viewProjection`/`model` réutilisées (plus de `new Matrix4f()` par chunk/frame).
+- Tests `FrustumTest` (devant/derrière/au-delà du far/sur le côté/à cheval sur un bord).
 
 ---
 

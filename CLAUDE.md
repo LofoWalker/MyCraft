@@ -55,8 +55,8 @@ InputSystem → PhysicsSystem → CollisionSystem → MovementSystem
 | 8 | Génération procédurale (Perlin/Simplex) | ✅ Done |
 | 9 | Physique & gravité | ✅ Done |
 | 10 | Collision AABB vs voxels | ✅ Done |
-| 11 | Chunks dynamiques (streaming + virtual threads) | ⬜ Next |
-| 12 | Polish & perfs | ⬜ |
+| 11 | Chunks dynamiques (streaming + virtual threads) | ✅ Done |
+| 12 | Polish & perfs (frustum culling, zéro alloc rendu) | ✅ Done |
 
 ## Conventions clean code
 - **Noms expressifs** — pas d'abréviations sauf conventions établies (`dt`, `dx`, `ebo`).
