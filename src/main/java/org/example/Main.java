@@ -28,43 +28,24 @@ public class Main {
         world.add(player, new Gravity(WorldConstants.GRAVITY));
         world.add(player, new ColliderAABB(0.6f, 1.8f, 0.6f));
         world.add(player, new CameraComponent(70f, 0.1f, 1000f));
-        world.add(player, new PlayerInput(false, false, false, false, false, 0f, 0f));
-
-        spawnChunks(world);
+        world.add(player, new PlayerInput(false, false, false, false, false, false, 0f, 0f));
 
         window.captureCursor();
 
         try (Shader shader = Shader.fromResources("/shaders/basic.vert", "/shaders/basic.frag");
-             ChunkMeshingSystem chunkMesher = new ChunkMeshingSystem()) {
+             ChunkStreamingSystem chunkStreaming = new ChunkStreamingSystem(WorldConstants.WORLD_SEED)) {
 
             simScheduler.add(new InputSystem(window));
+            simScheduler.add(new FlightControlSystem());
             simScheduler.add(new PhysicsSystem());
             simScheduler.add(new MovementSystem());
             simScheduler.add(new CollisionSystem());
 
             renderScheduler.add(new CameraSystem(window.getAspectRatio()));
-            renderScheduler.add(new WorldGenSystem(WorldConstants.WORLD_SEED));
-            renderScheduler.add(chunkMesher);
+            renderScheduler.add(chunkStreaming);
             renderScheduler.add(new RenderSystem(shader));
 
             GameLoop.run(window, world, simScheduler, renderScheduler);
         }
-    }
-
-    static void spawnChunks(World world) {
-        int radius = 3;
-        for (int cx = -radius; cx <= radius; cx++) {
-            for (int cz = -radius; cz <= radius; cz++) {
-                spawnEmptyChunk(world, cx, cz);
-            }
-        }
-    }
-
-    private static void spawnEmptyChunk(World world, int cx, int cz) {
-        int S = WorldConstants.CHUNK_SIZE;
-        Entity chunk = world.create();
-        world.add(chunk, new Position((float) (cx * S), 0f, (float) (cz * S)));
-        world.add(chunk, new ChunkComponent(cx, cz));
-        world.add(chunk, VoxelChunkData.empty());
     }
 }

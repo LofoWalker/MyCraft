@@ -1,5 +1,6 @@
 package org.example.systems;
 
+import org.example.components.Flying;
 import org.example.components.Gravity;
 import org.example.components.Velocity;
 import org.example.ecs.Entity;
@@ -13,6 +14,7 @@ public final class PhysicsSystem implements GameSystem {
     public void update(World world, float dt) {
         for (int eid : world.query(Velocity.class, Gravity.class)) {
             Entity   entity = new Entity(eid);
+            if (world.has(entity, Flying.class)) continue;
             Velocity vel    = world.get(entity, Velocity.class).orElseThrow();
             Gravity  grav   = world.get(entity, Gravity.class).orElseThrow();
 

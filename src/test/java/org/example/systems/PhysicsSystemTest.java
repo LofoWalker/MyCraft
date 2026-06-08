@@ -1,5 +1,6 @@
 package org.example.systems;
 
+import org.example.components.Flying;
 import org.example.components.Gravity;
 import org.example.components.Position;
 import org.example.components.Velocity;
@@ -56,6 +57,14 @@ class PhysicsSystemTest {
         Velocity vel = world.get(entity, Velocity.class).orElseThrow();
         assertEquals(5f,  vel.x(), 1e-4f);
         assertEquals(-3f, vel.z(), 1e-4f);
+    }
+
+    @Test
+    void flyingEntitySkipsGravity() {
+        world.add(entity, new Flying());
+        system.update(world, 1.0f);
+        Velocity vel = world.get(entity, Velocity.class).orElseThrow();
+        assertEquals(0f, vel.y(), 1e-5f);
     }
 
     @Test

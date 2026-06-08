@@ -1,5 +1,6 @@
 package org.example.systems;
 
+import org.example.components.Flying;
 import org.example.components.Grounded;
 import org.example.components.PlayerInput;
 import org.example.components.Position;
@@ -30,7 +31,7 @@ class MovementSystemTest {
     }
 
     private void input(boolean fwd, boolean bwd, boolean left, boolean right, boolean jump, float dx, float dy) {
-        world.add(player, new PlayerInput(fwd, bwd, left, right, jump, dx, dy));
+        world.add(player, new PlayerInput(fwd, bwd, left, right, jump, false, dx, dy));
     }
 
     @Test
@@ -127,6 +128,34 @@ class MovementSystemTest {
         system.update(world, 0.016f);
         Rotation rot = world.get(player, Rotation.class).orElseThrow();
         assertEquals(-89f, rot.pitch(), 1e-4f);
+    }
+
+    @Test
+    void flyingAscendsWhileSpaceHeld() {
+        world.add(player, new Flying());
+        input(false, false, false, false, true, 0f, 0f);
+        system.update(world, 1.0f);
+        Position pos = world.get(player, Position.class).orElseThrow();
+        assertEquals(WorldConstants.FLY_VERTICAL_SPEED, pos.y(), 1e-4f);
+    }
+
+    @Test
+    void flyingDescendsWhileControlHeld() {
+        world.add(player, new Flying());
+        world.add(player, new PlayerInput(false, false, false, false, false, true, 0f, 0f));
+        system.update(world, 1.0f);
+        Position pos = world.get(player, Position.class).orElseThrow();
+        assertEquals(-WorldConstants.FLY_VERTICAL_SPEED, pos.y(), 1e-4f);
+    }
+
+    @Test
+    void flyingHoversAndDiscardsFallingVelocity() {
+        world.add(player, new Velocity(0f, -30f, 0f));
+        world.add(player, new Flying());
+        input(false, false, false, false, false, 0f, 0f);
+        system.update(world, 1.0f);
+        Position pos = world.get(player, Position.class).orElseThrow();
+        assertEquals(0f, pos.y(), 1e-4f);
     }
 
     @Test

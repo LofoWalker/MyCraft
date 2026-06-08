@@ -55,7 +55,7 @@ class ComponentsTest {
 
     @Test
     void playerInputAttachable() {
-        world.add(player, new PlayerInput(true, false, false, false, false, 0.3f, -0.1f));
+        world.add(player, new PlayerInput(true, false, false, false, false, false, 0.3f, -0.1f));
         PlayerInput input = world.get(player, PlayerInput.class).orElseThrow();
         assertTrue(input.forward());
         assertFalse(input.backward());
@@ -140,7 +140,7 @@ class ComponentsTest {
         world.add(player, new Velocity(0, 0, 0));
         world.add(player, new Rotation(0, 0));
         world.add(player, new CameraComponent(70f, 0.1f, 1000f));
-        world.add(player, new PlayerInput(false, false, false, false, false, 0, 0));
+        world.add(player, new PlayerInput(false, false, false, false, false, false, 0, 0));
         world.add(player, new Gravity(9.81f));
         world.add(player, new ColliderAABB(0.6f, 1.8f, 0.6f));
 

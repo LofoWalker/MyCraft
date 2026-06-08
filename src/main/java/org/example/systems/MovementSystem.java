@@ -1,5 +1,6 @@
 package org.example.systems;
 
+import org.example.components.Flying;
 import org.example.components.Grounded;
 import org.example.components.PlayerInput;
 import org.example.components.Position;
@@ -12,7 +13,7 @@ import org.example.world.WorldConstants;
 
 public final class MovementSystem implements GameSystem {
 
-    private static final float MOVE_SPEED  = 6.0f;
+    private static final float MOVE_SPEED  = 50.0f;
     private static final float SENSITIVITY = 0.1f;
     private static final float MAX_PITCH   = 89.0f;
 
@@ -31,7 +32,8 @@ public final class MovementSystem implements GameSystem {
             world.add(entity, newRot);
 
             boolean grounded = world.has(entity, Grounded.class);
-            Velocity newVel  = computeVelocity(vel, newRot, input, grounded);
+            boolean flying   = world.has(entity, Flying.class);
+            Velocity newVel  = computeVelocity(vel, newRot, input, grounded, flying);
             prevJump = input.jump();
             world.add(entity, newVel);
 
@@ -42,7 +44,7 @@ public final class MovementSystem implements GameSystem {
         }
     }
 
-    private Velocity computeVelocity(Velocity vel, Rotation rot, PlayerInput input, boolean grounded) {
+    private Velocity computeVelocity(Velocity vel, Rotation rot, PlayerInput input, boolean grounded, boolean flying) {
         float yawRad = (float) Math.toRadians(rot.yaw());
         float fwdX   = (float)  Math.sin(yawRad);
         float fwdZ   = (float) -Math.cos(yawRad);
@@ -59,13 +61,22 @@ public final class MovementSystem implements GameSystem {
         float vx   = hLen > 0 ? (dx / hLen) * MOVE_SPEED : 0f;
         float vz   = hLen > 0 ? (dz / hLen) * MOVE_SPEED : 0f;
 
-        // Rising-edge jump: only fires on first press and only when standing on ground
-        float vy = vel.y();
-        if (input.jump() && !prevJump && grounded) {
-            vy = WorldConstants.JUMP_IMPULSE;
-        }
-
+        float vy = flying ? flyVertical(input) : walkVertical(vel, input, grounded);
         return new Velocity(vx, vy, vz);
+    }
+
+    // Flight: space ascends, left control descends, no key hovers.
+    private static float flyVertical(PlayerInput input) {
+        float vy = 0f;
+        if (input.jump())    vy += WorldConstants.FLY_VERTICAL_SPEED;
+        if (input.descend()) vy -= WorldConstants.FLY_VERTICAL_SPEED;
+        return vy;
+    }
+
+    // Rising-edge jump: only fires on first press and only when standing on ground.
+    private float walkVertical(Velocity vel, PlayerInput input, boolean grounded) {
+        if (input.jump() && !prevJump && grounded) return WorldConstants.JUMP_IMPULSE;
+        return vel.y();
     }
 
     private static Rotation applyMouseLook(Rotation rot, PlayerInput input) {

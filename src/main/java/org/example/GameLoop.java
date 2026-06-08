@@ -25,6 +25,7 @@ public final class GameLoop {
 
     public static void run(Window window, World world,
                            SystemScheduler simScheduler, SystemScheduler renderScheduler) {
+        PerformanceMonitor perf = new PerformanceMonitor();
         double previous    = glfwGetTime();
         double accumulator = 0.0;
         double fpsTimer    = 0.0;
@@ -47,7 +48,7 @@ public final class GameLoop {
             frameCount++;
             fpsTimer += elapsed;
             if (fpsTimer >= FPS_REPORT_INTERVAL) {
-                glfwSetWindowTitle(window.getHandle(), "MyCraft | FPS: " + frameCount);
+                glfwSetWindowTitle(window.getHandle(), perf.title(frameCount));
                 frameCount = 0;
                 fpsTimer  -= FPS_REPORT_INTERVAL;
             }

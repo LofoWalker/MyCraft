@@ -22,7 +22,7 @@ class InputSystemTest {
     void setUp() {
         world  = new World();
         player = world.create();
-        world.add(player, new PlayerInput(false, false, false, false, false, 0f, 0f));
+        world.add(player, new PlayerInput(false, false, false, false, false, false, 0f, 0f));
     }
 
     /** Build an InputSystem where only the given GLFW key codes are considered pressed. */
@@ -44,6 +44,7 @@ class InputSystemTest {
         assertFalse(input.strafeLeft());
         assertFalse(input.strafeRight());
         assertFalse(input.jump());
+        assertFalse(input.descend());
     }
 
     @Test
@@ -74,6 +75,12 @@ class InputSystemTest {
     void spaceKeySetsJumpFlag() {
         buildSystem(GLFW_KEY_SPACE).update(world, 0.016f);
         assertTrue(world.get(player, PlayerInput.class).orElseThrow().jump());
+    }
+
+    @Test
+    void leftControlSetsDescendFlag() {
+        buildSystem(GLFW_KEY_LEFT_CONTROL).update(world, 0.016f);
+        assertTrue(world.get(player, PlayerInput.class).orElseThrow().descend());
     }
 
     @Test

@@ -6,6 +6,7 @@ public record PlayerInput(
         boolean strafeLeft,
         boolean strafeRight,
         boolean jump,
+        boolean descend,
         float mouseDeltaX,
         float mouseDeltaY
 ) {}
