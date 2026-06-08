@@ -52,7 +52,7 @@ public class Main {
         world.add(chunk, fillTerrain());
     }
 
-    private static VoxelChunkData fillTerrain() {
+    static VoxelChunkData fillTerrain() {
         int S = WorldConstants.CHUNK_SIZE;
         VoxelChunkData data = VoxelChunkData.empty();
         for (int bx = 0; bx < S; bx++) {

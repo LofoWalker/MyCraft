@@ -55,6 +55,23 @@ class GameLoopTest {
     }
 
     @Test
+    void largeAccumulatorRunsAllSteps() {
+        AtomicInteger count = new AtomicInteger();
+        double remainder = GameLoop.runFixedSteps(FIXED_DT * 100, FIXED_DT, count::incrementAndGet);
+        assertEquals(100, count.get());
+        assertEquals(0.0, remainder, 1e-10);
+    }
+
+    @Test
+    void accumulatorJustAboveFixedDtRunsExactlyOneTick() {
+        AtomicInteger count = new AtomicInteger();
+        double accumulator = FIXED_DT + 1e-12;
+        double remainder = GameLoop.runFixedSteps(accumulator, FIXED_DT, count::incrementAndGet);
+        assertEquals(1, count.get());
+        assertTrue(remainder < FIXED_DT);
+    }
+
+    @Test
     void ticksRunInOrderWithCorrectCount() {
         int[] callOrder = new int[5];
         AtomicInteger idx = new AtomicInteger();

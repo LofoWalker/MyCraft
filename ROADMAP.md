@@ -85,7 +85,7 @@ compilable et testable** : on n'avance au suivant que quand le précédent tourn
 
 ---
 
-## Step 7 — Meshing de chunk
+## ~~Step 7 — Meshing de chunk~~ ✅
 **But : transformer les voxels en un seul mesh efficace.**
 - `ChunkMeshingSystem` : **face culling** (ne générer que les faces exposées à de l'air), un mesh par chunk.
 - (Optionnel/extension : greedy meshing).

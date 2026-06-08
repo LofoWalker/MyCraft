@@ -75,4 +75,40 @@ class MeshTest {
             assertEquals(0.5f, Math.abs(z), 1e-6f, "z must be ±0.5");
         }
     }
+
+    @Test
+    void buildCubeVerticesSpansFullUnitCube() {
+        float[] v = Mesh.buildCubeVertices();
+        float minX = Float.MAX_VALUE, maxX = -Float.MAX_VALUE;
+        float minY = Float.MAX_VALUE, maxY = -Float.MAX_VALUE;
+        float minZ = Float.MAX_VALUE, maxZ = -Float.MAX_VALUE;
+        for (int i = 0; i < v.length; i += FLOATS_PER_VERTEX) {
+            minX = Math.min(minX, v[i]);     maxX = Math.max(maxX, v[i]);
+            minY = Math.min(minY, v[i + 1]); maxY = Math.max(maxY, v[i + 1]);
+            minZ = Math.min(minZ, v[i + 2]); maxZ = Math.max(maxZ, v[i + 2]);
+        }
+        assertEquals(-0.5f, minX, 1e-6f); assertEquals(0.5f, maxX, 1e-6f);
+        assertEquals(-0.5f, minY, 1e-6f); assertEquals(0.5f, maxY, 1e-6f);
+        assertEquals(-0.5f, minZ, 1e-6f); assertEquals(0.5f, maxZ, 1e-6f);
+    }
+
+    @Test
+    void eachFaceHasFourDistinctVertexPositions() {
+        float[] v = Mesh.buildCubeVertices();
+        for (int f = 0; f < FACES; f++) {
+            int base = f * VERTICES_PER_FACE * FLOATS_PER_VERTEX;
+            float[][] pos = new float[4][3];
+            for (int vi = 0; vi < 4; vi++) {
+                pos[vi][0] = v[base + vi * FLOATS_PER_VERTEX];
+                pos[vi][1] = v[base + vi * FLOATS_PER_VERTEX + 1];
+                pos[vi][2] = v[base + vi * FLOATS_PER_VERTEX + 2];
+            }
+            for (int a = 0; a < 4; a++) {
+                for (int b = a + 1; b < 4; b++) {
+                    boolean same = pos[a][0] == pos[b][0] && pos[a][1] == pos[b][1] && pos[a][2] == pos[b][2];
+                    assertFalse(same, "Face " + f + ": vertices " + a + " and " + b + " share same position");
+                }
+            }
+        }
+    }
 }

@@ -25,6 +25,16 @@ public final class ChunkMeshingSystem implements GameSystem, AutoCloseable {
         { 0,0,0,  0,0,1,  0,1,1,  0,1,0 }, // Left   (x-)
     };
 
+    // Neighbor offsets (dx,dy,dz) per face — same order as FACE_OFFSETS
+    private static final int[][] FACE_NEIGHBOR = {
+        { 0,  0,  1}, // Front  (z+)
+        { 0,  0, -1}, // Back   (z-)
+        { 0,  1,  0}, // Top    (y+)
+        { 0, -1,  0}, // Bottom (y-)
+        { 1,  0,  0}, // Right  (x+)
+        {-1,  0,  0}, // Left   (x-)
+    };
+
     private static final int FACE_TOP          = 2;
     private static final int FLOATS_PER_VERTEX = 6;
 
@@ -55,15 +65,26 @@ public final class ChunkMeshingSystem implements GameSystem, AutoCloseable {
             for (int z = 0; z < S; z++)
                 for (int x = 0; x < S; x++) {
                     byte block = data.get(x, y, z);
-                    if (block != WorldConstants.BLOCK_AIR) appendBlock(builder, x, y, z, block);
+                    if (block != WorldConstants.BLOCK_AIR) appendVisibleFaces(builder, data, x, y, z, block);
                 }
         return builder.toGeometry();
     }
 
-    private static void appendBlock(MeshBuilder builder, int x, int y, int z, byte block) {
+    private static void appendVisibleFaces(MeshBuilder builder, VoxelChunkData data, int x, int y, int z, byte block) {
         for (int face = 0; face < 6; face++) {
-            builder.addFace(x, y, z, face, blockFaceColor(block, face));
+            int nx = x + FACE_NEIGHBOR[face][0];
+            int ny = y + FACE_NEIGHBOR[face][1];
+            int nz = z + FACE_NEIGHBOR[face][2];
+            if (isAirOrOutOfBounds(data, nx, ny, nz)) {
+                builder.addFace(x, y, z, face, blockFaceColor(block, face));
+            }
         }
+    }
+
+    private static boolean isAirOrOutOfBounds(VoxelChunkData data, int x, int y, int z) {
+        int S = WorldConstants.CHUNK_SIZE;
+        if (x < 0 || x >= S || y < 0 || y >= S || z < 0 || z >= S) return true;
+        return data.get(x, y, z) == WorldConstants.BLOCK_AIR;
     }
 
     private static float[] blockFaceColor(byte block, int face) {
