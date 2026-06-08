@@ -4,6 +4,7 @@ import org.example.components.*;
 import org.example.ecs.Entity;
 import org.example.ecs.GameSystem;
 import org.example.ecs.World;
+import org.example.world.BlockType;
 import org.example.world.WorldConstants;
 
 import java.util.HashMap;
@@ -181,8 +182,7 @@ public final class CollisionSystem implements GameSystem {
         if (data == null) return false;
         int lx = wx - cx * WorldConstants.CHUNK_SIZE_XZ;
         int lz = wz - cz * WorldConstants.CHUNK_SIZE_XZ;
-        byte block = data.get(lx, wy, lz);
-        return block != WorldConstants.BLOCK_AIR && block != WorldConstants.BLOCK_WATER;
+        return BlockType.byId(data.get(lx, wy, lz)).solid();
     }
 
     static long chunkKey(int cx, int cz) {

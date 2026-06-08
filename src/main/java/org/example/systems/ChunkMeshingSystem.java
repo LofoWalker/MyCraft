@@ -7,6 +7,7 @@ import org.example.ecs.Entity;
 import org.example.ecs.GameSystem;
 import org.example.ecs.World;
 import org.example.render.Mesh;
+import org.example.world.BlockType;
 import org.example.world.WorldConstants;
 
 import java.util.ArrayList;
@@ -89,17 +90,8 @@ public final class ChunkMeshingSystem implements GameSystem, AutoCloseable {
     }
 
     private static float[] blockFaceColor(byte block, int face) {
-        return switch (block) {
-            case WorldConstants.BLOCK_STONE -> new float[]{ 0.50f, 0.50f, 0.50f };
-            case WorldConstants.BLOCK_DIRT  -> new float[]{ 0.55f, 0.35f, 0.15f };
-            case WorldConstants.BLOCK_GRASS -> (face == FACE_TOP)
-                    ? new float[]{ 0.35f, 0.70f, 0.25f }
-                    : new float[]{ 0.55f, 0.35f, 0.15f };
-            case WorldConstants.BLOCK_WOOD   -> new float[]{ 0.40f, 0.26f, 0.13f };
-            case WorldConstants.BLOCK_LEAVES -> new float[]{ 0.18f, 0.50f, 0.16f };
-            case WorldConstants.BLOCK_WATER  -> new float[]{ 0.20f, 0.40f, 0.85f };
-            default -> new float[]{ 1.0f, 0.0f, 1.0f }; // magenta = unknown block type
-        };
+        BlockType type = BlockType.byId(block);
+        return (face == FACE_TOP) ? type.colorTop() : type.colorSide();
     }
 
     @Override
