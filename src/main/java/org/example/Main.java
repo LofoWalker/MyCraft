@@ -24,6 +24,8 @@ public class Main {
         Entity player = world.create();
         world.add(player, new Position(8f, 20f, 8f));
         world.add(player, new Rotation(-30f, -20f));
+        world.add(player, new Velocity(0f, 0f, 0f));
+        world.add(player, new Gravity(WorldConstants.GRAVITY));
         world.add(player, new CameraComponent(70f, 0.1f, 1000f));
         world.add(player, new PlayerInput(false, false, false, false, false, 0f, 0f));
 
@@ -35,6 +37,7 @@ public class Main {
              ChunkMeshingSystem chunkMesher = new ChunkMeshingSystem()) {
 
             simScheduler.add(new InputSystem(window));
+            simScheduler.add(new PhysicsSystem());
             simScheduler.add(new MovementSystem());
 
             renderScheduler.add(new CameraSystem(window.getAspectRatio()));

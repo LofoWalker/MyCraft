@@ -3,8 +3,10 @@ package org.example.systems;
 import org.example.components.PlayerInput;
 import org.example.components.Position;
 import org.example.components.Rotation;
+import org.example.components.Velocity;
 import org.example.ecs.Entity;
 import org.example.ecs.World;
+import org.example.world.WorldConstants;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -12,8 +14,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class MovementSystemTest {
 
-    private World world;
-    private Entity player;
+    private World          world;
+    private Entity         player;
     private MovementSystem system;
 
     @BeforeEach
@@ -22,6 +24,7 @@ class MovementSystemTest {
         player = world.create();
         world.add(player, new Position(0f, 0f, 0f));
         world.add(player, new Rotation(0f, 0f));
+        world.add(player, new Velocity(0f, 0f, 0f));
         system = new MovementSystem();
     }
 
@@ -41,7 +44,7 @@ class MovementSystemTest {
 
     @Test
     void forwardAtYawZeroMovesNegativeZ() {
-        // yaw=0 → forward = (sin0, 0, -cos0) = (0, 0, -1)
+        // yaw=0 → forward = (sin0, -cos0) = (0, -1) horizontal only
         input(true, false, false, false, false, 0f, 0f);
         system.update(world, 1.0f);
         Position pos = world.get(player, Position.class).orElseThrow();
@@ -59,11 +62,26 @@ class MovementSystemTest {
     }
 
     @Test
-    void jumpMovesUp() {
+    void jumpAppliesImpulseOnFirstPress() {
         input(false, false, false, false, true, 0f, 0f);
         system.update(world, 1.0f);
         Position pos = world.get(player, Position.class).orElseThrow();
-        assertEquals(50f, pos.y(), 1e-4f);
+        // Rising edge: vy = JUMP_IMPULSE, pos.y += JUMP_IMPULSE * dt
+        assertEquals(WorldConstants.JUMP_IMPULSE * 1.0f, pos.y(), 1e-4f);
+    }
+
+    @Test
+    void jumpNotRetriggeredWhileHeld() {
+        input(false, false, false, false, true, 0f, 0f);
+        system.update(world, 1.0f);
+        // Second frame: jump still held — vy stays at whatever gravity left it (0 since no PhysicsSystem)
+        input(false, false, false, false, true, 0f, 0f);
+        system.update(world, 1.0f);
+        // vy in second frame = vel.y from first frame = JUMP_IMPULSE (written to Velocity last frame)
+        // pos.y = JUMP_IMPULSE*1 (first frame) + JUMP_IMPULSE*1 (second frame, held)
+        Position pos = world.get(player, Position.class).orElseThrow();
+        // Second frame: prevJump=true, so no new impulse; vy = vel.y = JUMP_IMPULSE from stored velocity
+        assertEquals(WorldConstants.JUMP_IMPULSE * 2.0f, pos.y(), 1e-4f);
     }
 
     @Test
@@ -72,7 +90,7 @@ class MovementSystemTest {
         input(true, false, false, true, false, 0f, 0f);
         system.update(world, 1.0f);
         Position pos = world.get(player, Position.class).orElseThrow();
-        float dist = (float) Math.sqrt(pos.x() * pos.x() + pos.y() * pos.y() + pos.z() * pos.z());
+        float dist = (float) Math.sqrt(pos.x() * pos.x() + pos.z() * pos.z());
         assertEquals(50f, dist, 1e-4f);
     }
 
@@ -88,7 +106,7 @@ class MovementSystemTest {
     @Test
     void pitchClampedAtPositiveMax() {
         world.add(player, new Rotation(0f, 80f));
-        input(false, false, false, false, false, 0f, -200f);  // large upward mouse
+        input(false, false, false, false, false, 0f, -200f);
         system.update(world, 0.016f);
         Rotation rot = world.get(player, Rotation.class).orElseThrow();
         assertEquals(89f, rot.pitch(), 1e-4f);
@@ -97,7 +115,7 @@ class MovementSystemTest {
     @Test
     void pitchClampedAtNegativeMax() {
         world.add(player, new Rotation(0f, -80f));
-        input(false, false, false, false, false, 0f, 200f);  // large downward mouse
+        input(false, false, false, false, false, 0f, 200f);
         system.update(world, 0.016f);
         Rotation rot = world.get(player, Rotation.class).orElseThrow();
         assertEquals(-89f, rot.pitch(), 1e-4f);
@@ -105,9 +123,10 @@ class MovementSystemTest {
 
     @Test
     void entityWithoutPlayerInputIsIgnored() {
-        // No PlayerInput component added — position must stay unchanged
         system.update(world, 1.0f);
         Position pos = world.get(player, Position.class).orElseThrow();
         assertEquals(0f, pos.x(), 1e-5f);
+        assertEquals(0f, pos.y(), 1e-5f);
+        assertEquals(0f, pos.z(), 1e-5f);
     }
 }

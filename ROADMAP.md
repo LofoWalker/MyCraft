@@ -105,7 +105,7 @@ compilable et testable** : on n'avance au suivant que quand le précédent tourn
 
 ---
 
-## Step 9 — Physique & gravité
+## ~~Step 9 — Physique & gravité~~ ✅
 **But : le joueur tombe et subit la gravité.**
 - `PhysicsSystem` : applique `Gravity` → intègre `Velocity` puis `Position` (semi-implicit Euler).
 - Saut (espace) ajoute une impulsion verticale.

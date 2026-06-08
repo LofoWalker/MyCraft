@@ -53,8 +53,8 @@ InputSystem → PhysicsSystem → CollisionSystem → MovementSystem
 | 6 | Données voxel & rendu d'un chunk | ✅ Done |
 | 7 | Meshing de chunk (face culling) | ✅ Done |
 | 8 | Génération procédurale (Perlin/Simplex) | ✅ Done |
-| 9 | Physique & gravité | ⬜ Next |
-| 10 | Collision AABB vs voxels | ⬜ |
+| 9 | Physique & gravité | ✅ Done |
+| 10 | Collision AABB vs voxels | ⬜ Next |
 | 11 | Chunks dynamiques (streaming + virtual threads) | ⬜ |
 | 12 | Polish & perfs | ⬜ |
 
