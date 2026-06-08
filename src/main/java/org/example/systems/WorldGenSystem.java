@@ -18,12 +18,25 @@ public final class WorldGenSystem implements GameSystem {
     private static final double LACUNARITY     = 2.0;
     private static final int    DIRT_DEPTH     = 3;
 
+    // Caves: thin "spaghetti" tunnels (where two noise fields both cross zero) plus rarer
+    // "cheese" caverns (high-noise blobs). The bottom CAVE_FLOOR layers are never carved.
+    private static final int    CAVE_FLOOR        = 4;
+    private static final int    CAVE_OCTAVES      = 2;
+    private static final double TUNNEL_SCALE      = 0.04;
+    private static final double TUNNEL_RADIUS     = 0.08;
+    private static final double CHEESE_SCALE      = 0.025;
+    private static final double CHEESE_THRESHOLD  = 0.55;
+
     private final PerlinNoise noise;
+    private final PerlinNoise caveNoiseA;
+    private final PerlinNoise caveNoiseB;
     private final long        seed;
 
     public WorldGenSystem(long seed) {
-        this.noise = new PerlinNoise(seed);
-        this.seed  = seed;
+        this.noise      = new PerlinNoise(seed);
+        this.caveNoiseA = new PerlinNoise(seed ^ 0xCA5E1L);
+        this.caveNoiseB = new PerlinNoise(seed ^ 0xCA5E2L);
+        this.seed       = seed;
     }
 
     @Override
@@ -34,6 +47,7 @@ public final class WorldGenSystem implements GameSystem {
             ChunkComponent chunk = world.get(entity, ChunkComponent.class).orElseThrow();
             VoxelChunkData data  = world.get(entity, VoxelChunkData.class).orElseThrow();
             generateTerrain(data, chunk.x(), chunk.z());
+            carveCaves(data, chunk.x(), chunk.z());
             plantTrees(data, chunk.x(), chunk.z());
             world.add(entity, new ChunkGenerated());
         }
@@ -50,6 +64,32 @@ public final class WorldGenSystem implements GameSystem {
                 fillColumn(data, bx, bz, surface);
             }
         }
+    }
+
+    // Package-private: pure carving pass — runs after terrain, before decoration.
+    // Cave noise is sampled in world space, so tunnels stay continuous across chunk borders.
+    void carveCaves(VoxelChunkData data, int chunkX, int chunkZ) {
+        int S = WorldConstants.CHUNK_SIZE_XZ;
+        for (int bx = 0; bx < S; bx++) {
+            for (int bz = 0; bz < S; bz++) {
+                double worldX = chunkX * S + bx;
+                double worldZ = chunkZ * S + bz;
+                for (int y = CAVE_FLOOR; y < WorldConstants.WORLD_HEIGHT; y++) {
+                    byte block = data.get(bx, y, bz);
+                    if (block == WorldConstants.BLOCK_AIR || block == WorldConstants.BLOCK_WATER) continue;
+                    if (isCave(worldX, y, worldZ)) data.set(bx, y, bz, WorldConstants.BLOCK_AIR);
+                }
+            }
+        }
+    }
+
+    private boolean isCave(double worldX, double y, double worldZ) {
+        double cheese = caveNoiseA.fractal3D(worldX * CHEESE_SCALE, y * CHEESE_SCALE, worldZ * CHEESE_SCALE,
+                CAVE_OCTAVES, PERSISTENCE, LACUNARITY);
+        if (cheese > CHEESE_THRESHOLD) return true;
+        double t1 = caveNoiseA.noise(worldX * TUNNEL_SCALE, y * TUNNEL_SCALE, worldZ * TUNNEL_SCALE);
+        double t2 = caveNoiseB.noise(worldX * TUNNEL_SCALE, y * TUNNEL_SCALE, worldZ * TUNNEL_SCALE);
+        return Math.abs(t1) < TUNNEL_RADIUS && Math.abs(t2) < TUNNEL_RADIUS;
     }
 
     // Package-private: pure feature pass — runs after terrain, testable without ECS context.
