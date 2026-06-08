@@ -52,8 +52,12 @@ public final class Mesh implements AutoCloseable {
     }
 
     public static Mesh createTestCube() {
-        // 6 faces × 4 vertices — interleaved position(xyz) + color(rgb)
-        float[] vertices = {
+        return new Mesh(buildCubeVertices(), buildCubeIndices());
+    }
+
+    // Package-private: pure geometry data, no OpenGL — testable without a GL context
+    static float[] buildCubeVertices() {
+        return new float[] {
             // Front (z+) — red
             -0.5f, -0.5f,  0.5f,  1.0f, 0.2f, 0.2f,
              0.5f, -0.5f,  0.5f,  1.0f, 0.2f, 0.2f,
@@ -85,7 +89,9 @@ public final class Mesh implements AutoCloseable {
             -0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 0.2f,
             -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 0.2f,
         };
+    }
 
+    static int[] buildCubeIndices() {
         int[] indices = new int[36];
         for (int f = 0; f < 6; f++) {
             int b = f * 4;
@@ -97,8 +103,7 @@ public final class Mesh implements AutoCloseable {
             indices[i + 4] = b + 3;
             indices[i + 5] = b;
         }
-
-        return new Mesh(vertices, indices);
+        return indices;
     }
 
     public void draw() {

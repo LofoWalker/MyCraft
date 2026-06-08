@@ -27,7 +27,8 @@ public final class Shader implements AutoCloseable {
         return new Shader(readResource(vertexPath), readResource(fragmentPath));
     }
 
-    private static String readResource(String path) {
+    // Package-private: pure I/O, no OpenGL — testable without a GL context
+    static String readResource(String path) {
         try (InputStream is = Shader.class.getResourceAsStream(path)) {
             if (is == null) throw new RuntimeException("Shader resource not found: " + path);
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(is))) {

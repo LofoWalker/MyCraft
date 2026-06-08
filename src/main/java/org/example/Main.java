@@ -1,6 +1,7 @@
 package org.example;
 
 import org.example.components.CameraComponent;
+import org.example.components.PlayerInput;
 import org.example.components.Position;
 import org.example.components.Rotation;
 import org.example.ecs.Entity;
@@ -9,6 +10,8 @@ import org.example.ecs.World;
 import org.example.render.Mesh;
 import org.example.render.Shader;
 import org.example.systems.CameraSystem;
+import org.example.systems.InputSystem;
+import org.example.systems.MovementSystem;
 import org.example.systems.RenderSystem;
 
 public class Main {
@@ -28,9 +31,15 @@ public class Main {
         world.add(player, new Position(0f, 0f, 3f));
         world.add(player, new Rotation(0f, 0f));
         world.add(player, new CameraComponent(70f, 0.1f, 1000f));
+        world.add(player, new PlayerInput(false, false, false, false, false, 0f, 0f));
+
+        window.captureCursor();
 
         try (Shader shader   = Shader.fromResources("/shaders/basic.vert", "/shaders/basic.frag");
              Mesh   cubeMesh = Mesh.createTestCube()) {
+
+            simScheduler.add(new InputSystem(window));
+            simScheduler.add(new MovementSystem());
 
             renderScheduler.add(new CameraSystem(window.getAspectRatio()));
             renderScheduler.add(new RenderSystem(shader, cubeMesh));

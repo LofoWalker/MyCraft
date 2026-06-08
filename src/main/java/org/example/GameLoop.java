@@ -14,6 +14,15 @@ public final class GameLoop {
 
     private GameLoop() {}
 
+    // Package-private: pure timing logic — testable without GLFW
+    static double runFixedSteps(double accumulator, double fixedDt, Runnable tick) {
+        while (accumulator >= fixedDt) {
+            tick.run();
+            accumulator -= fixedDt;
+        }
+        return accumulator;
+    }
+
     public static void run(Window window, World world,
                            SystemScheduler simScheduler, SystemScheduler renderScheduler) {
         double previous    = glfwGetTime();
@@ -27,10 +36,8 @@ public final class GameLoop {
             previous = current;
 
             accumulator += elapsed;
-            while (accumulator >= FIXED_DT) {
-                simScheduler.update(world, (float) FIXED_DT);
-                accumulator -= FIXED_DT;
-            }
+            accumulator = runFixedSteps(accumulator, FIXED_DT,
+                    () -> simScheduler.update(world, (float) FIXED_DT));
 
             window.clear();
             renderScheduler.update(world, (float) elapsed);
