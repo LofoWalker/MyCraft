@@ -7,7 +7,7 @@ compilable et testable** : on n'avance au suivant que quand le précédent tourn
 
 ---
 
-## Step 0 — Setup projet & fenêtre
+## ~~Step 0 — Setup projet & fenêtre~~ ✅
 **But : une fenêtre noire OpenGL qui s'ouvre et se ferme proprement.**
 - Ajouter les dépendances dans `pom.xml` : **LWJGL 3** (GLFW + OpenGL) et **JOML** (maths : vecteurs/matrices).
 - Configurer les natives LWJGL pour Windows.

@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git add src/*)",
+      "Bash(git commit*)",
+      "PowerShell(git status*)",
+      "PowerShell(git diff*)",
+      "PowerShell(git log*)",
+      "PowerShell(git add src/*)",
+      "PowerShell(git commit*)",
+      "PowerShell(*mvn.cmd* compile*)",
+      "PowerShell(*mvn.cmd* test*)",
+      "PowerShell(*mvn.cmd* exec:java*)",
+      "PowerShell(*mvn.cmd* -f * compile*)",
+      "PowerShell(*mvn.cmd* -f * test*)"
+    ]
+  }
+}
