@@ -6,8 +6,10 @@ import org.example.components.RenderCamera;
 import org.example.components.Rotation;
 import org.example.ecs.Entity;
 import org.example.ecs.World;
+import org.example.world.WorldConstants;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.joml.Vector3f;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -84,5 +86,18 @@ class CameraSystemTest {
         RenderCamera rc = world.get(player, RenderCamera.class).orElseThrow();
         // For a non-degenerate perspective projection, m22 must be < 0 and ≠ 0
         assertTrue(rc.projection().m22() < 0f);
+    }
+
+    @Test
+    void viewUsesPlayerEyeHeightOffset() {
+        world.add(player, new Position(0f, 0f, 0f));
+        world.add(player, new Rotation(0f, 0f));
+
+        system.update(world, 0.016f);
+
+        RenderCamera rc = world.get(player, RenderCamera.class).orElseThrow();
+        Vector3f translation = new Vector3f();
+        rc.view().getTranslation(translation);
+        assertEquals(-WorldConstants.PLAYER_EYE_HEIGHT, translation.y, 1e-5f);
     }
 }

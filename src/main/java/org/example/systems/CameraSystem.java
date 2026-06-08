@@ -7,6 +7,7 @@ import org.example.components.Rotation;
 import org.example.ecs.Entity;
 import org.example.ecs.GameSystem;
 import org.example.ecs.World;
+import org.example.world.WorldConstants;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
@@ -38,7 +39,7 @@ public final class CameraSystem implements GameSystem {
             (float)  Math.sin(pitchRad),
             (float) -Math.cos(yawRad) * cosPitch
         );
-        Vector3f eye = new Vector3f(pos.x(), pos.y(), pos.z());
+        Vector3f eye = new Vector3f(pos.x(), pos.y() + WorldConstants.PLAYER_EYE_HEIGHT, pos.z());
         return new Matrix4f().lookAt(eye, new Vector3f(eye).add(forward), new Vector3f(0, 1, 0));
     }
 

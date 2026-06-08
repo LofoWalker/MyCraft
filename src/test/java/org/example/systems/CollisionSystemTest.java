@@ -80,9 +80,9 @@ class CollisionSystemTest {
 
     @Test
     void playerLandsOnFloor() {
-        // Floor at y=4; player falling with feet at y=4.1 → should be pushed to y=5
-        world.add(player, new Position(8f, 4.1f, 8f));
-        world.add(player, new Velocity(0f, -5f, 0f));
+        // Simulate post-movement state: previous y=5.0, current y=4.9
+        world.add(player, new Position(8f, 4.9f, 8f));
+        world.add(player, new Velocity(0f, -6f, 0f));
 
         Entity floorChunk = world.create();
         world.add(floorChunk, new ChunkComponent(0, 0));
@@ -100,8 +100,8 @@ class CollisionSystemTest {
 
     @Test
     void playerIsGroundedAfterLanding() {
-        world.add(player, new Position(8f, 5.0f, 8f));
-        world.add(player, new Velocity(0f, -1f, 0f));
+        world.add(player, new Position(8f, 4.9f, 8f));
+        world.add(player, new Velocity(0f, -6f, 0f));
 
         Entity floorChunk = world.create();
         world.add(floorChunk, new ChunkComponent(0, 0));
@@ -118,8 +118,8 @@ class CollisionSystemTest {
 
     @Test
     void velocityYZeroedOnLanding() {
-        world.add(player, new Position(8f, 5.0f, 8f));
-        world.add(player, new Velocity(0f, -5f, 0f));
+        world.add(player, new Position(8f, 4.9f, 8f));
+        world.add(player, new Velocity(0f, -6f, 0f));
 
         Entity floorChunk = world.create();
         world.add(floorChunk, new ChunkComponent(0, 0));
@@ -133,6 +133,24 @@ class CollisionSystemTest {
 
         Velocity vel = world.get(player, Velocity.class).orElseThrow();
         assertEquals(0f, vel.y(), 1e-5f);
+    }
+
+    @Test
+    void playerLandsOnLowFloorWithoutSinking() {
+        // previous y=2.0, current y=1.9
+        world.add(player, new Position(8f, 1.9f, 8f));
+        world.add(player, new Velocity(0f, -6f, 0f));
+
+        Entity floorChunk = world.create();
+        world.add(floorChunk, new ChunkComponent(0, 0));
+        VoxelChunkData data = VoxelChunkData.empty();
+        data.set(8, 1, 8, WorldConstants.BLOCK_GRASS);
+        world.add(floorChunk, data);
+
+        system.update(world, 1f / 60f);
+
+        Position pos = world.get(player, Position.class).orElseThrow();
+        assertEquals(2f, pos.y(), 1e-3f);
     }
 
     @Test
@@ -150,9 +168,9 @@ class CollisionSystemTest {
 
     @Test
     void playerBlockedByWallOnX() {
-        // Wall block at x=9, player moving right with feet at (8.5, 5, 8)
-        world.add(player, new Position(8.5f, 5f, 8f));
-        world.add(player, new Velocity(10f, 0f, 0f));
+        // Simulate post-movement state: previous x=8.5, current x=8.8
+        world.add(player, new Position(8.8f, 5f, 8f));
+        world.add(player, new Velocity(18f, 0f, 0f));
 
         Entity wallChunk = world.create();
         world.add(wallChunk, new ChunkComponent(0, 0));
@@ -165,7 +183,61 @@ class CollisionSystemTest {
         system.update(world, 1f / 60f);
 
         Position pos = world.get(player, Position.class).orElseThrow();
-        assertTrue(pos.x() + W / 2f <= 9f + 1e-3f, "Player should not penetrate wall");
+        assertEquals(8.5f, pos.x(), 1e-3f);
+    }
+
+    @Test
+    void fastMovementStillBlockedByWallOnX() {
+        // Simulate a high-speed frame where the resolved position is already deep past x=9
+        world.add(player, new Position(10.8f, 5f, 8f));
+        world.add(player, new Velocity(120f, 0f, 0f));
+
+        Entity wallChunk = world.create();
+        world.add(wallChunk, new ChunkComponent(0, 0));
+        VoxelChunkData data = VoxelChunkData.empty();
+        data.set(9, 5, 8, WorldConstants.BLOCK_STONE);
+        data.set(9, 6, 8, WorldConstants.BLOCK_STONE);
+        world.add(wallChunk, data);
+
+        system.update(world, 1f / 60f);
+
+        Position pos = world.get(player, Position.class).orElseThrow();
+        assertEquals(8.8f, pos.x(), 1e-3f);
+    }
+
+    @Test
+    void playerBlockedByCeilingOnY() {
+        // Simulate post-movement state: previous y=5.2, current y=5.3
+        world.add(player, new Position(8f, 5.3f, 8f));
+        world.add(player, new Velocity(0f, 6f, 0f));
+
+        Entity ceilingChunk = world.create();
+        world.add(ceilingChunk, new ChunkComponent(0, 0));
+        VoxelChunkData data = VoxelChunkData.empty();
+        data.set(8, 7, 8, WorldConstants.BLOCK_STONE);
+        world.add(ceilingChunk, data);
+
+        system.update(world, 1f / 60f);
+
+        Position pos = world.get(player, Position.class).orElseThrow();
+        assertEquals(5.2f, pos.y(), 1e-3f);
+    }
+
+    @Test
+    void velocityYZeroedOnCeilingHit() {
+        world.add(player, new Position(8f, 5.3f, 8f));
+        world.add(player, new Velocity(0f, 6f, 0f));
+
+        Entity ceilingChunk = world.create();
+        world.add(ceilingChunk, new ChunkComponent(0, 0));
+        VoxelChunkData data = VoxelChunkData.empty();
+        data.set(8, 7, 8, WorldConstants.BLOCK_STONE);
+        world.add(ceilingChunk, data);
+
+        system.update(world, 1f / 60f);
+
+        Velocity vel = world.get(player, Velocity.class).orElseThrow();
+        assertEquals(0f, vel.y(), 1e-5f);
     }
 
     @Test
