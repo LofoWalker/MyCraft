@@ -1,0 +1,47 @@
+package org.example;
+
+import org.example.ecs.SystemScheduler;
+import org.example.ecs.World;
+
+import static org.lwjgl.glfw.GLFW.glfwGetTime;
+import static org.lwjgl.glfw.GLFW.glfwSetWindowTitle;
+
+public final class GameLoop {
+
+    private static final double FIXED_DT            = 1.0 / 60.0;
+    private static final double MAX_FRAME_TIME       = 0.25;
+    private static final double FPS_REPORT_INTERVAL  = 1.0;
+
+    private GameLoop() {}
+
+    public static void run(Window window, World world, SystemScheduler scheduler) {
+        double previous    = glfwGetTime();
+        double accumulator = 0.0;
+        double fpsTimer    = 0.0;
+        int    frameCount  = 0;
+
+        while (!window.shouldClose()) {
+            double current = glfwGetTime();
+            double elapsed = Math.min(current - previous, MAX_FRAME_TIME);
+            previous = current;
+
+            accumulator += elapsed;
+            while (accumulator >= FIXED_DT) {
+                scheduler.update(world, (float) FIXED_DT);
+                accumulator -= FIXED_DT;
+            }
+
+            window.clear();
+            window.swapBuffers();
+            window.pollEvents();
+
+            frameCount++;
+            fpsTimer += elapsed;
+            if (fpsTimer >= FPS_REPORT_INTERVAL) {
+                glfwSetWindowTitle(window.getHandle(), "MyCraft | FPS: " + frameCount);
+                frameCount = 0;
+                fpsTimer  -= FPS_REPORT_INTERVAL;
+            }
+        }
+    }
+}

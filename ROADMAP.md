@@ -42,7 +42,7 @@ compilable et testable** : on n'avance au suivant que quand le précédent tourn
 
 ---
 
-## Step 3 — Game loop & timestep
+## ~~Step 3 — Game loop & timestep~~ ✅
 **But : boucle de jeu propre.**
 - Fixed timestep pour la simulation (physique déterministe), rendu découplé.
 - Calcul du `dt`, accumulateur, FPS counter.

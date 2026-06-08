@@ -47,8 +47,8 @@ InputSystem → PhysicsSystem → CollisionSystem → MovementSystem
 | 0 | Setup projet & fenêtre GLFW/OpenGL | ✅ Done |
 | 1 | Cœur ECS (Entity, World, ComponentStore, SystemScheduler) | ✅ Done |
 | 2 | Components (records Java 26) | ✅ Done |
-| 3 | Game loop & fixed timestep | ⬜ Next |
-| 4 | Rendu OpenGL de base + Caméra | ⬜ |
+| 3 | Game loop & fixed timestep | ✅ Done |
+| 4 | Rendu OpenGL de base + Caméra | ⬜ Next |
 | 5 | Input & contrôleur FPS (noclip) | ⬜ |
 | 6 | Données voxel & rendu d'un chunk | ⬜ |
 | 7 | Meshing de chunk (face culling) | ⬜ |
