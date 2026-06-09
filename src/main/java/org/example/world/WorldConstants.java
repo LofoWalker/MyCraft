@@ -9,8 +9,8 @@ public final class WorldConstants {
     public static final int CHUNK_SIZE_XZ = 32;
     public static final int WORLD_HEIGHT  = 256;
 
-    public static final int CHUNK_LOAD_RADIUS          = 3;
-    public static final int CHUNK_UNLOAD_RADIUS        = 5;
+    public static final int CHUNK_LOAD_RADIUS          = 12;
+    public static final int CHUNK_UNLOAD_RADIUS        = 15;
     public static final int MAX_CHUNK_UPLOADS_PER_FRAME = 4;
 
     public static final byte BLOCK_AIR    = 0;

@@ -62,7 +62,7 @@ public final class ChunkMeshingSystem implements GameSystem, AutoCloseable {
     static Geometry buildGeometry(VoxelChunkData data) {
         int SX = WorldConstants.CHUNK_SIZE_XZ;
         int H  = WorldConstants.WORLD_HEIGHT;
-        MeshBuilder builder = new MeshBuilder(SX * SX * H);
+        MeshBuilder builder = new MeshBuilder();
         for (int y = 0; y < H; y++)
             for (int z = 0; z < SX; z++)
                 for (int x = 0; x < SX; x++) {
@@ -103,17 +103,20 @@ public final class ChunkMeshingSystem implements GameSystem, AutoCloseable {
     record Geometry(float[] vertices, int[] indices) {}
 
     private static final class MeshBuilder {
-        private final float[] vertices;
-        private final int[]   indices;
+        // A full chunk floor exposes at least 32×32 top faces; start there and grow by
+        // doubling, so transient buffers track the real mesh size instead of the
+        // (vastly larger) theoretical worst case of every block showing all six faces.
+        private static final int INITIAL_FACES   = WorldConstants.CHUNK_SIZE_XZ * WorldConstants.CHUNK_SIZE_XZ;
+        private static final int FLOATS_PER_FACE = 4 * FLOATS_PER_VERTEX;
+        private static final int INTS_PER_FACE   = 6;
+
+        private float[] vertices = new float[INITIAL_FACES * FLOATS_PER_FACE];
+        private int[]   indices  = new int[INITIAL_FACES * INTS_PER_FACE];
         private int vOffset = 0;
         private int iOffset = 0;
 
-        MeshBuilder(int maxBlocks) {
-            vertices = new float[maxBlocks * 6 * 4 * FLOATS_PER_VERTEX];
-            indices  = new int[maxBlocks * 6 * 6];
-        }
-
         void addFace(int bx, int by, int bz, int face, float[] color) {
+            ensureCapacity();
             float[] off = FACE_OFFSETS[face];
             int baseVertex = vOffset / FLOATS_PER_VERTEX;
             for (int v = 0; v < 4; v++) {
@@ -130,6 +133,15 @@ public final class ChunkMeshingSystem implements GameSystem, AutoCloseable {
             indices[iOffset++] = baseVertex + 2;
             indices[iOffset++] = baseVertex + 3;
             indices[iOffset++] = baseVertex;
+        }
+
+        private void ensureCapacity() {
+            if (vOffset + FLOATS_PER_FACE > vertices.length) {
+                vertices = Arrays.copyOf(vertices, vertices.length * 2);
+            }
+            if (iOffset + INTS_PER_FACE > indices.length) {
+                indices = Arrays.copyOf(indices, indices.length * 2);
+            }
         }
 
         Geometry toGeometry() {
