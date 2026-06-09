@@ -38,7 +38,8 @@ public class Main {
         System.out.println("World seed: " + seed);
 
         try (Shader shader = Shader.fromResources("/shaders/basic.vert", "/shaders/basic.frag");
-             ChunkStreamingSystem chunkStreaming = new ChunkStreamingSystem(seed)) {
+             ChunkStreamingSystem chunkStreaming = new ChunkStreamingSystem(seed);
+             SkySystem sky = new SkySystem()) {
 
             simScheduler.add(new InputSystem(window));
             simScheduler.add(new FlightControlSystem());
@@ -47,6 +48,7 @@ public class Main {
             simScheduler.add(new CollisionSystem());
 
             renderScheduler.add(new CameraSystem(window.getAspectRatio()));
+            renderScheduler.add(sky);
             renderScheduler.add(chunkStreaming);
             renderScheduler.add(new RenderSystem(shader));
 
