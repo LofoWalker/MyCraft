@@ -1,4 +1,4 @@
-package org.example.world;
+package org.example.worldgen.noise;
 
 public final class PerlinNoise {
 

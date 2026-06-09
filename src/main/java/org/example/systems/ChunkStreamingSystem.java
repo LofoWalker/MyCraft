@@ -11,6 +11,7 @@ import org.example.ecs.World;
 import org.example.render.Mesh;
 import org.example.systems.ChunkMeshingSystem.Geometry;
 import org.example.world.WorldConstants;
+import org.example.worldgen.GenerationPipeline;
 
 import java.util.HashMap;
 import java.util.Iterator;
@@ -24,7 +25,7 @@ public final class ChunkStreamingSystem implements GameSystem, AutoCloseable {
 
     private record ChunkResult(long key, int entityId, VoxelChunkData data, Geometry geometry) {}
 
-    private final WorldGenSystem terrain;
+    private final GenerationPipeline generation;
     private final ExecutorService workers = Executors.newVirtualThreadPerTaskExecutor();
     private final ConcurrentLinkedQueue<ChunkResult> ready = new ConcurrentLinkedQueue<>();
 
@@ -33,7 +34,7 @@ public final class ChunkStreamingSystem implements GameSystem, AutoCloseable {
     private final Map<Integer, Mesh> meshes         = new HashMap<>();
 
     public ChunkStreamingSystem(long seed) {
-        this.terrain = new WorldGenSystem(seed);
+        this.generation = GenerationPipeline.overworld(seed);
     }
 
     @Override
@@ -77,9 +78,7 @@ public final class ChunkStreamingSystem implements GameSystem, AutoCloseable {
     private void submitGeneration(long key, int entityId, int cx, int cz) {
         workers.submit(() -> {
             VoxelChunkData data = VoxelChunkData.empty();
-            terrain.generateTerrain(data, cx, cz);
-            terrain.carveCaves(data, cx, cz);
-            terrain.plantTrees(data, cx, cz);
+            generation.generate(data, cx, cz);
             Geometry geometry = ChunkMeshingSystem.buildGeometry(data);
             ready.add(new ChunkResult(key, entityId, data, geometry));
         });
