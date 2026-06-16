@@ -19,7 +19,16 @@ public final class WorldConstants {
     public static final byte BLOCK_GRASS  = 3;
     public static final byte BLOCK_WOOD   = 4;
     public static final byte BLOCK_LEAVES = 5;
-    public static final byte BLOCK_WATER  = 6;
+    public static final byte BLOCK_WATER   = 6;
+    public static final byte BLOCK_IRON    = 7;
+    public static final byte BLOCK_DIAMOND = 8;
+
+    // Ore scatter into underground stone (see OreStage). One eligible stone block in RARITY
+    // (statistically) becomes the ore. Diamond is rarer and confined to the deepest layers.
+    public static final int IRON_RARITY        = 36;
+    public static final int DIAMOND_RARITY     = 360;
+    public static final int DIAMOND_MAX_LEVEL  = 16;
+    public static final int ORE_MIN_LEVEL      = 1;
 
     // Temporary placeholder world: a flat plain at this altitude while real terrain generation is
     // on hold. Stone fills the column below; the surface is randomly capped (see FlatTerrainStage).
@@ -69,6 +78,8 @@ public final class WorldConstants {
     public static final float TERMINAL_VELOCITY = -50.0f;
     public static final float JUMP_IMPULSE      = 8.0f;
     public static final float PLAYER_EYE_HEIGHT = 1.6f;
+    // How far (in blocks) the player can reach to break a block, measured from the eye.
+    public static final float PLAYER_REACH      = 5.0f;
 
     public static final float FLY_VERTICAL_SPEED        = 20.0f;
     public static final float DOUBLE_TAP_WINDOW_SECONDS = 0.3f;

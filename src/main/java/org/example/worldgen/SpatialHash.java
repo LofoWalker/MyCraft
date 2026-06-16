@@ -7,7 +7,14 @@ public final class SpatialHash {
     private SpatialHash() {}
 
     public static long hash(int x, int z, long seed) {
-        long h = seed ^ (x * 0x9E3779B97F4A7C15L) ^ (z * 0xC2B2AE3D27D4EB4FL);
+        return finalize(seed ^ (x * 0x9E3779B97F4A7C15L) ^ (z * 0xC2B2AE3D27D4EB4FL));
+    }
+
+    public static long hash(int x, int y, int z, long seed) {
+        return finalize(seed ^ (x * 0x9E3779B97F4A7C15L) ^ (y * 0xC2B2AE3D27D4EB4FL) ^ (z * 0xD6E8FEB86659FD93L));
+    }
+
+    private static long finalize(long h) {
         h ^= (h >>> 30);
         h *= 0xBF58476D1CE4E5B9L;
         h ^= (h >>> 27);

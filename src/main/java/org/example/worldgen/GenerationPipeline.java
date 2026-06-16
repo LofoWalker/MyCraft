@@ -5,6 +5,7 @@ import org.example.world.WorldConstants;
 import org.example.worldgen.stage.CaveStage;
 import org.example.worldgen.stage.FlatTerrainStage;
 import org.example.worldgen.stage.GenerationStage;
+import org.example.worldgen.stage.OreStage;
 import org.example.worldgen.stage.TerrainStage;
 import org.example.worldgen.stage.TreeStage;
 import org.example.worldgen.stage.WaterSettleStage;
@@ -37,6 +38,7 @@ public final class GenerationPipeline {
         SurfaceHeights flatSurface = (worldX, worldZ) -> WorldConstants.FLAT_SURFACE_LEVEL;
         return new GenerationPipeline(List.of(
                 new FlatTerrainStage(seed),
+                new OreStage(seed),
                 new TreeStage(flatSurface, seed, WorldConstants.BLOCK_DIRT)));
     }
 

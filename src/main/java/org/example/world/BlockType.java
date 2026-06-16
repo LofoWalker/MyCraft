@@ -14,6 +14,8 @@ public enum BlockType {
     WOOD  (0.40f, 0.26f, 0.13f, true),
     LEAVES(0.18f, 0.50f, 0.16f, true),
     WATER (0.20f, 0.40f, 0.85f, false),
+    IRON  (0.78f, 0.66f, 0.52f, true),
+    DIAMOND(0.40f, 0.85f, 0.90f, true),
     UNKNOWN(1.00f, 0.00f, 1.00f, true);
 
     private final float[] colorTop;
@@ -35,7 +37,7 @@ public enum BlockType {
     public boolean solid()     { return solid; }
 
     // Index order must match the BLOCK_* byte ids in WorldConstants.
-    private static final BlockType[] BY_ID = { AIR, STONE, DIRT, GRASS, WOOD, LEAVES, WATER };
+    private static final BlockType[] BY_ID = { AIR, STONE, DIRT, GRASS, WOOD, LEAVES, WATER, IRON, DIAMOND };
 
     public static BlockType byId(byte id) {
         int i = id & 0xFF;
