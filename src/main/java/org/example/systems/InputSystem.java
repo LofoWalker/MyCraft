@@ -15,24 +15,32 @@ public final class InputSystem implements GameSystem {
         int getKey(long window, int key);
     }
 
-    private final long      windowHandle;
-    private final KeyQuery  keyQuery;
-    private final Runnable  closeAction;
+    @FunctionalInterface
+    interface MouseButtonQuery {
+        int getButton(long window, int button);
+    }
+
+    private final long             windowHandle;
+    private final KeyQuery         keyQuery;
+    private final MouseButtonQuery mouseButtonQuery;
+    private final Runnable         closeAction;
     private float accumulatedDeltaX;
     private float accumulatedDeltaY;
 
     public InputSystem(Window window) {
-        this.windowHandle = window.getHandle();
-        this.keyQuery     = (win, key) -> glfwGetKey(win, key);
-        this.closeAction  = () -> glfwSetWindowShouldClose(this.windowHandle, true);
+        this.windowHandle     = window.getHandle();
+        this.keyQuery         = (win, key) -> glfwGetKey(win, key);
+        this.mouseButtonQuery = (win, button) -> glfwGetMouseButton(win, button);
+        this.closeAction      = () -> glfwSetWindowShouldClose(this.windowHandle, true);
         registerMouseDeltaCallback();
     }
 
     // Package-private: allows testing without GLFW
     InputSystem(KeyQuery keyQuery, Runnable closeAction) {
-        this.windowHandle = 0L;
-        this.keyQuery     = keyQuery;
-        this.closeAction  = closeAction;
+        this.windowHandle     = 0L;
+        this.keyQuery         = keyQuery;
+        this.mouseButtonQuery = (win, button) -> GLFW_RELEASE;
+        this.closeAction      = closeAction;
     }
 
     // Package-private: inject simulated mouse delta in tests
@@ -71,9 +79,10 @@ public final class InputSystem implements GameSystem {
         boolean strafeRight = keyQuery.getKey(windowHandle, GLFW_KEY_D)     == GLFW_PRESS;
         boolean jump        = keyQuery.getKey(windowHandle, GLFW_KEY_SPACE)        == GLFW_PRESS;
         boolean descend     = keyQuery.getKey(windowHandle, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS;
+        boolean breakBlock  = mouseButtonQuery.getButton(windowHandle, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
 
         for (int eid : world.query(PlayerInput.class)) {
-            world.add(new Entity(eid), new PlayerInput(forward, backward, strafeLeft, strafeRight, jump, descend, dx, dy));
+            world.add(new Entity(eid), new PlayerInput(forward, backward, strafeLeft, strafeRight, jump, descend, dx, dy, breakBlock));
         }
     }
 }

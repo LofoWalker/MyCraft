@@ -31,7 +31,7 @@ class MovementSystemTest {
     }
 
     private void input(boolean fwd, boolean bwd, boolean left, boolean right, boolean jump, float dx, float dy) {
-        world.add(player, new PlayerInput(fwd, bwd, left, right, jump, false, dx, dy));
+        world.add(player, new PlayerInput(fwd, bwd, left, right, jump, false, dx, dy, false));
     }
 
     @Test
@@ -52,7 +52,7 @@ class MovementSystemTest {
         Position pos = world.get(player, Position.class).orElseThrow();
         assertEquals(0f,   pos.x(), 1e-4f);
         assertEquals(0f,   pos.y(), 1e-4f);
-        assertEquals(-50f, pos.z(), 1e-4f);  // MOVE_SPEED * dt = 50 * 1
+        assertEquals(-5f, pos.z(), 1e-4f);  // MOVE_SPEED * dt = 50 * 1
     }
 
     @Test
@@ -60,7 +60,7 @@ class MovementSystemTest {
         input(false, true, false, false, false, 0f, 0f);
         system.update(world, 1.0f);
         Position pos = world.get(player, Position.class).orElseThrow();
-        assertEquals(50f, pos.z(), 1e-4f);
+        assertEquals(5f, pos.z(), 1e-4f);
     }
 
     @Test
@@ -100,7 +100,7 @@ class MovementSystemTest {
         system.update(world, 1.0f);
         Position pos = world.get(player, Position.class).orElseThrow();
         float dist = (float) Math.sqrt(pos.x() * pos.x() + pos.z() * pos.z());
-        assertEquals(50f, dist, 1e-4f);
+        assertEquals(5f, dist, 1e-4f);
     }
 
     @Test
@@ -142,7 +142,7 @@ class MovementSystemTest {
     @Test
     void flyingDescendsWhileControlHeld() {
         world.add(player, new Flying());
-        world.add(player, new PlayerInput(false, false, false, false, false, true, 0f, 0f));
+        world.add(player, new PlayerInput(false, false, false, false, false, true, 0f, 0f, false));
         system.update(world, 1.0f);
         Position pos = world.get(player, Position.class).orElseThrow();
         assertEquals(-WorldConstants.FLY_VERTICAL_SPEED, pos.y(), 1e-4f);

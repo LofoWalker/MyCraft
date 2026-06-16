@@ -8,5 +8,6 @@ public record PlayerInput(
         boolean jump,
         boolean descend,
         float mouseDeltaX,
-        float mouseDeltaY
+        float mouseDeltaY,
+        boolean breakBlock
 ) {}

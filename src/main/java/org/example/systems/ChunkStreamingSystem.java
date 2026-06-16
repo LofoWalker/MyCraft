@@ -1,6 +1,7 @@
 package org.example.systems;
 
 import org.example.components.ChunkComponent;
+import org.example.components.ChunkDirty;
 import org.example.components.ChunkMeshComponent;
 import org.example.components.PlayerInput;
 import org.example.components.Position;
@@ -44,6 +45,23 @@ public final class ChunkStreamingSystem implements GameSystem, AutoCloseable {
             unloadDistantChunks(world, pc[0], pc[1]);
         });
         applyReadyChunks(world);
+        remeshDirtyChunks(world);
+    }
+
+    // Block edits (BlockInteractionSystem) mutate voxel data in place and flag the chunk dirty.
+    // Rebuild the mesh here on the main thread, where this system owns the GL mesh lifecycle.
+    private void remeshDirtyChunks(World world) {
+        for (int eid : world.query(ChunkDirty.class, VoxelChunkData.class)) {
+            Entity entity = new Entity(eid);
+            VoxelChunkData data = world.get(entity, VoxelChunkData.class).orElseThrow();
+            Geometry geometry = ChunkMeshingSystem.buildGeometry(data);
+            Mesh oldMesh = meshes.remove(eid);
+            if (oldMesh != null) oldMesh.close();
+            Mesh mesh = Mesh.create(geometry.vertices(), geometry.indices());
+            meshes.put(eid, mesh);
+            world.add(entity, new ChunkMeshComponent(mesh));
+            world.remove(entity, ChunkDirty.class);
+        }
     }
 
     private Optional<int[]> playerChunk(World world) {

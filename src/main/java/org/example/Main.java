@@ -30,7 +30,7 @@ public class Main {
         world.add(player, new Gravity(WorldConstants.GRAVITY));
         world.add(player, new ColliderAABB(0.6f, 1.8f, 0.6f));
         world.add(player, new CameraComponent(70f, 0.1f, 1000f));
-        world.add(player, new PlayerInput(false, false, false, false, false, false, 0f, 0f));
+        world.add(player, new PlayerInput(false, false, false, false, false, false, 0f, 0f, false));
 
         window.captureCursor();
 
@@ -42,6 +42,7 @@ public class Main {
              SkySystem sky = new SkySystem()) {
 
             simScheduler.add(new InputSystem(window));
+            simScheduler.add(new BlockInteractionSystem());
             simScheduler.add(new FlightControlSystem());
             simScheduler.add(new PhysicsSystem());
             simScheduler.add(new MovementSystem());

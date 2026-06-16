@@ -13,7 +13,7 @@ import org.example.world.WorldConstants;
 
 public final class MovementSystem implements GameSystem {
 
-    private static final float MOVE_SPEED  = 50.0f;
+    private static final float MOVE_SPEED  = 5.0f;
     private static final float SENSITIVITY = 0.1f;
     private static final float MAX_PITCH   = 89.0f;
 
