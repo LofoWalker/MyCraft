@@ -1,5 +1,6 @@
 package org.example.systems;
 
+import org.example.components.BlockBreakProgress;
 import org.example.components.CameraComponent;
 import org.example.components.ChunkComponent;
 import org.example.components.ChunkDirty;
@@ -10,14 +11,16 @@ import org.example.components.VoxelChunkData;
 import org.example.ecs.Entity;
 import org.example.ecs.GameSystem;
 import org.example.ecs.World;
+import org.example.world.BlockType;
 import org.example.world.WorldConstants;
 
 import java.util.HashMap;
 import java.util.Map;
 
-// Lets the player break the block they look at: casts a ray from the eye along the view direction,
-// clears the first solid voxel within reach, and flags its chunk for re-meshing. Edge-triggered, so
-// one press breaks exactly one block. Mesh rebuilding is owned by ChunkStreamingSystem.
+// Lets the player break the block they look at: casts a ray from the eye along the view direction
+// and accumulates damage on the first solid voxel within reach. A block breaks only once the damage
+// dealt reaches its hardness, so harder blocks need more hits; switching target resets progress.
+// Edge-triggered (one hit per press). Mesh rebuilding is owned by ChunkStreamingSystem.
 public final class BlockInteractionSystem implements GameSystem {
 
     // Edge detection: a held mouse button must not break a block every frame.
@@ -37,10 +40,10 @@ public final class BlockInteractionSystem implements GameSystem {
 
         Position pos = world.get(player, Position.class).orElseThrow();
         Rotation rot = world.get(player, Rotation.class).orElseThrow();
-        breakTargetedBlock(world, pos, rot);
+        hitTargetedBlock(world, player, pos, rot);
     }
 
-    private void breakTargetedBlock(World world, Position pos, Rotation rot) {
+    private void hitTargetedBlock(World world, Entity player, Position pos, Rotation rot) {
         Map<Long, Integer>        chunkEntities = new HashMap<>();
         Map<Long, VoxelChunkData> chunkData     = buildChunkMaps(world, chunkEntities);
 
@@ -56,7 +59,36 @@ public final class BlockInteractionSystem implements GameSystem {
         float eyeZ = pos.z();
 
         int[] hit = raycastSolid(eyeX, eyeY, eyeZ, dirX, dirY, dirZ, WorldConstants.PLAYER_REACH, chunkData);
-        if (hit != null) removeBlock(world, hit[0], hit[1], hit[2], chunkEntities, chunkData);
+        if (hit == null) return;
+        damageBlock(world, player, hit[0], hit[1], hit[2], chunkEntities, chunkData);
+    }
+
+    private void damageBlock(World world, Entity player, int wx, int wy, int wz,
+                             Map<Long, Integer> chunkEntities, Map<Long, VoxelChunkData> chunkData) {
+        int damage = accumulatedDamage(world, player, wx, wy, wz);
+        int hardness = BlockType.byId(blockAt(wx, wy, wz, chunkData)).hardness();
+        if (damage >= hardness) {
+            removeBlock(world, wx, wy, wz, chunkEntities, chunkData);
+            world.remove(player, BlockBreakProgress.class);
+        } else {
+            world.add(player, new BlockBreakProgress(wx, wy, wz, damage));
+        }
+    }
+
+    // Continues the in-progress break if the same voxel is still targeted, otherwise starts fresh.
+    private static int accumulatedDamage(World world, Entity player, int wx, int wy, int wz) {
+        int previous = world.get(player, BlockBreakProgress.class)
+                .filter(p -> p.targets(wx, wy, wz))
+                .map(BlockBreakProgress::damage)
+                .orElse(0);
+        return previous + WorldConstants.BARE_HAND_DAMAGE;
+    }
+
+    private static byte blockAt(int wx, int wy, int wz, Map<Long, VoxelChunkData> chunkData) {
+        int s  = WorldConstants.CHUNK_SIZE_XZ;
+        int cx = Math.floorDiv(wx, s);
+        int cz = Math.floorDiv(wz, s);
+        return chunkData.get(CollisionSystem.chunkKey(cx, cz)).get(wx - cx * s, wy, wz - cz * s);
     }
 
     private static void removeBlock(World world, int wx, int wy, int wz,

@@ -39,7 +39,8 @@ public class Main {
 
         try (Shader shader = Shader.fromResources("/shaders/basic.vert", "/shaders/basic.frag");
              ChunkStreamingSystem chunkStreaming = new ChunkStreamingSystem(seed);
-             SkySystem sky = new SkySystem()) {
+             SkySystem sky = new SkySystem();
+             BlockBreakOverlaySystem breakOverlay = new BlockBreakOverlaySystem()) {
 
             simScheduler.add(new InputSystem(window));
             simScheduler.add(new BlockInteractionSystem());
@@ -52,6 +53,7 @@ public class Main {
             renderScheduler.add(sky);
             renderScheduler.add(chunkStreaming);
             renderScheduler.add(new RenderSystem(shader));
+            renderScheduler.add(breakOverlay);
 
             GameLoop.run(window, world, simScheduler, renderScheduler);
         }

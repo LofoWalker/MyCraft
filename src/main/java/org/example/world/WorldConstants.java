@@ -80,6 +80,8 @@ public final class WorldConstants {
     public static final float PLAYER_EYE_HEIGHT = 1.6f;
     // How far (in blocks) the player can reach to break a block, measured from the eye.
     public static final float PLAYER_REACH      = 5.0f;
+    // Damage dealt per hit with bare hands. Tools will later raise this (or the per-block rate).
+    public static final int   BARE_HAND_DAMAGE  = 1;
 
     public static final float FLY_VERTICAL_SPEED        = 20.0f;
     public static final float DOUBLE_TAP_WINDOW_SECONDS = 0.3f;
