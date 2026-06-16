@@ -21,6 +21,10 @@ public final class WorldConstants {
     public static final byte BLOCK_LEAVES = 5;
     public static final byte BLOCK_WATER  = 6;
 
+    // Temporary placeholder world: a flat plain at this altitude while real terrain generation is
+    // on hold. Stone fills the column below; the surface is randomly capped (see FlatTerrainStage).
+    public static final int   FLAT_SURFACE_LEVEL  = 60;
+
     public static final long  WORLD_SEED          = 42L;
     // Base sits well above WATER_LEVEL so dry land dominates and water only pools in real
     // depressions (lakes) and river channels, instead of flooding every low column.

@@ -6,7 +6,7 @@ import org.example.worldgen.noise.PerlinNoise;
 // Pure height field: maps a world (x, z) to a surface Y by combining rolling hills, rare wide
 // mountains, lake basins and river channels. Holds no chunk state, so any stage that needs the
 // surface height (terrain fill, tree planting) can share one instance.
-public final class TerrainShape {
+public final class TerrainShape implements SurfaceHeights {
 
     private static final double NOISE_SCALE      = 0.05;
     private static final double MOUNTAIN_SCALE   = 0.006;
@@ -23,6 +23,11 @@ public final class TerrainShape {
         this.noise      = new PerlinNoise(seed);
         this.riverNoise = new PerlinNoise(seed ^ 0x817E5L);
         this.basinNoise = new PerlinNoise(seed ^ 0xBA51AL);
+    }
+
+    @Override
+    public int surfaceY(int worldX, int worldZ) {
+        return surfaceY((double) worldX, (double) worldZ);
     }
 
     public int surfaceY(double worldX, double worldZ) {

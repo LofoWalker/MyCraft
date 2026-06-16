@@ -15,7 +15,7 @@ public final class WorldGenSystem implements GameSystem {
     private final GenerationPipeline pipeline;
 
     public WorldGenSystem(long seed) {
-        this.pipeline = GenerationPipeline.overworld(seed);
+        this.pipeline = GenerationPipeline.flat(seed);
     }
 
     @Override

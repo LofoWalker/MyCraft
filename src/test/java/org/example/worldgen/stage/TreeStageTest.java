@@ -15,7 +15,7 @@ class TreeStageTest {
 
     private final TerrainShape shape   = new TerrainShape(SEED);
     private final TerrainStage terrain = new TerrainStage(shape);
-    private final TreeStage    trees   = new TreeStage(shape, SEED);
+    private final TreeStage    trees   = new TreeStage(shape, SEED, WorldConstants.BLOCK_GRASS);
 
     private VoxelChunkData withTrees(int cx, int cz) {
         VoxelChunkData data = VoxelChunkData.empty();
@@ -61,7 +61,7 @@ class TreeStageTest {
         VoxelChunkData a = withTrees(1, 2);
         TerrainShape shape2 = new TerrainShape(SEED);
         TerrainStage terrain2 = new TerrainStage(shape2);
-        TreeStage trees2 = new TreeStage(shape2, SEED);
+        TreeStage trees2 = new TreeStage(shape2, SEED, WorldConstants.BLOCK_GRASS);
         VoxelChunkData b = VoxelChunkData.empty();
         terrain2.apply(b, 1, 2);
         trees2.apply(b, 1, 2);

@@ -2,18 +2,22 @@ package org.example.worldgen.stage;
 
 import org.example.components.VoxelChunkData;
 import org.example.world.WorldConstants;
-import org.example.worldgen.TerrainShape;
+import org.example.worldgen.SpatialHash;
+import org.example.worldgen.SurfaceHeights;
 
-// Decoration stage: plants deterministic trees on grass surfaces. Trees stay inside chunk bounds
-// (no cross-chunk writes), leaving a thin treeless seam at borders.
+// Decoration stage: plants deterministic trees on columns whose surface is the configured ground
+// block. Trees stay inside chunk bounds (no cross-chunk writes), leaving a thin treeless seam at
+// borders. Surface heights come from the pipeline (real height field or a flat-world constant).
 public final class TreeStage implements GenerationStage {
 
-    private final TerrainShape shape;
-    private final long         seed;
+    private final SurfaceHeights heights;
+    private final long           seed;
+    private final byte           groundBlock;
 
-    public TreeStage(TerrainShape shape, long seed) {
-        this.shape = shape;
-        this.seed  = seed;
+    public TreeStage(SurfaceHeights heights, long seed, byte groundBlock) {
+        this.heights     = heights;
+        this.seed        = seed;
+        this.groundBlock = groundBlock;
     }
 
     @Override
@@ -25,20 +29,20 @@ public final class TreeStage implements GenerationStage {
                 int worldX = chunkX * s + bx;
                 int worldZ = chunkZ * s + bz;
                 if (!shouldPlantTree(worldX, worldZ)) continue;
-                int surfaceY = shape.surfaceY(worldX, worldZ);
-                if (data.get(bx, surfaceY, bz) != WorldConstants.BLOCK_GRASS) continue;
+                int surfaceY = heights.surfaceY(worldX, worldZ);
+                if (data.get(bx, surfaceY, bz) != groundBlock) continue;
                 growTree(data, bx, bz, surfaceY, trunkHeight(worldX, worldZ));
             }
         }
     }
 
     private boolean shouldPlantTree(int worldX, int worldZ) {
-        return hash(worldX, worldZ, seed) % WorldConstants.TREE_RARITY == 0;
+        return SpatialHash.hash(worldX, worldZ, seed) % WorldConstants.TREE_RARITY == 0;
     }
 
     private int trunkHeight(int worldX, int worldZ) {
         int span = WorldConstants.TREE_TRUNK_MAX_HEIGHT - WorldConstants.TREE_TRUNK_MIN_HEIGHT + 1;
-        return WorldConstants.TREE_TRUNK_MIN_HEIGHT + (int) (hash(worldX, worldZ, ~seed) % span);
+        return WorldConstants.TREE_TRUNK_MIN_HEIGHT + (int) (SpatialHash.hash(worldX, worldZ, ~seed) % span);
     }
 
     private static void growTree(VoxelChunkData data, int bx, int bz, int surfaceY, int trunkHeight) {
@@ -63,16 +67,5 @@ public final class TreeStage implements GenerationStage {
                 }
             }
         }
-    }
-
-    // Deterministic spatial hash (SplitMix-style finalizer) — same seed + coords always agree.
-    private static long hash(int x, int z, long seed) {
-        long h = seed ^ (x * 0x9E3779B97F4A7C15L) ^ (z * 0xC2B2AE3D27D4EB4FL);
-        h ^= (h >>> 30);
-        h *= 0xBF58476D1CE4E5B9L;
-        h ^= (h >>> 27);
-        h *= 0x94D049BB133111EBL;
-        h ^= (h >>> 31);
-        return h & 0x7FFFFFFFFFFFFFFFL;
     }
 }
