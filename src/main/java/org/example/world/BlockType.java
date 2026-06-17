@@ -16,6 +16,8 @@ public enum BlockType {
     WATER (0.20f, 0.40f, 0.85f, false, 0, Tile.WATER, Tile.WATER, Tile.WATER),
     IRON  (0.78f, 0.66f, 0.52f, true,  7, Tile.IRON_ORE, Tile.IRON_ORE, Tile.IRON_ORE),
     DIAMOND(0.40f, 0.85f, 0.90f, true, 9, Tile.DIAMOND_ORE, Tile.DIAMOND_ORE, Tile.DIAMOND_ORE),
+    // A torch is non-solid (light/walk through it) and emits blocklight; it is mined in a single hit.
+    TORCH (1.00f, 0.85f, 0.40f, false, 1, WorldConstants.TORCH_EMISSION, Tile.TORCH, Tile.TORCH, Tile.TORCH),
     UNKNOWN(1.00f, 0.00f, 1.00f, true, 1, Tile.STONE, Tile.STONE, Tile.STONE);
 
     // Linear tile indices into textures/blocks.png (index = tileY*16 + tileX, top-left origin).
@@ -33,37 +35,54 @@ public enum BlockType {
         static final int SAND        = 8;
         static final int IRON_ORE    = 9;
         static final int DIAMOND_ORE = 10;
+        static final int TORCH       = 11;
     }
+
+    private static final int NO_EMISSION = 0;
 
     private final float[] colorTop;
     private final float[] colorSide;
     private final boolean solid;
     // Bare-hand hits needed to break the block; tools will later reduce the effective count.
     private final int     hardness;
+    // Blocklight level this block radiates (0 = not a light source); seeds the LightEngine flood-fill.
+    private final int     lightEmission;
     private final int     tileTop;
     private final int     tileSide;
     private final int     tileBottom;
 
     BlockType(float tr, float tg, float tb, float sr, float sg, float sb, boolean solid, int hardness,
+              int lightEmission, int tileTop, int tileSide, int tileBottom) {
+        this.colorTop      = new float[]{ tr, tg, tb };
+        this.colorSide     = new float[]{ sr, sg, sb };
+        this.solid         = solid;
+        this.hardness      = hardness;
+        this.lightEmission = lightEmission;
+        this.tileTop       = tileTop;
+        this.tileSide      = tileSide;
+        this.tileBottom    = tileBottom;
+    }
+
+    BlockType(float tr, float tg, float tb, float sr, float sg, float sb, boolean solid, int hardness,
               int tileTop, int tileSide, int tileBottom) {
-        this.colorTop   = new float[]{ tr, tg, tb };
-        this.colorSide  = new float[]{ sr, sg, sb };
-        this.solid      = solid;
-        this.hardness   = hardness;
-        this.tileTop    = tileTop;
-        this.tileSide   = tileSide;
-        this.tileBottom = tileBottom;
+        this(tr, tg, tb, sr, sg, sb, solid, hardness, NO_EMISSION, tileTop, tileSide, tileBottom);
     }
 
     BlockType(float r, float g, float b, boolean solid, int hardness,
               int tileTop, int tileSide, int tileBottom) {
-        this(r, g, b, r, g, b, solid, hardness, tileTop, tileSide, tileBottom);
+        this(r, g, b, r, g, b, solid, hardness, NO_EMISSION, tileTop, tileSide, tileBottom);
+    }
+
+    BlockType(float r, float g, float b, boolean solid, int hardness, int lightEmission,
+              int tileTop, int tileSide, int tileBottom) {
+        this(r, g, b, r, g, b, solid, hardness, lightEmission, tileTop, tileSide, tileBottom);
     }
 
     public float[] colorTop()  { return colorTop; }
     public float[] colorSide() { return colorSide; }
     public boolean solid()     { return solid; }
     public int     hardness()  { return hardness; }
+    public int     lightEmission() { return lightEmission; }
     public int     tileTop()    { return tileTop; }
     public int     tileSide()   { return tileSide; }
     public int     tileBottom() { return tileBottom; }
@@ -77,7 +96,7 @@ public enum BlockType {
     }
 
     // Index order must match the BLOCK_* byte ids in WorldConstants.
-    private static final BlockType[] BY_ID = { AIR, STONE, DIRT, GRASS, WOOD, LEAVES, WATER, IRON, DIAMOND };
+    private static final BlockType[] BY_ID = { AIR, STONE, DIRT, GRASS, WOOD, LEAVES, WATER, IRON, DIAMOND, TORCH };
 
     public static BlockType byId(byte id) {
         int i = id & 0xFF;

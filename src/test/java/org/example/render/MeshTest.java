@@ -6,9 +6,10 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class MeshTest {
 
-    private static final int FLOATS_PER_VERTEX = 8;   // pos(3) + uv(2) + tint(3)
+    private static final int FLOATS_PER_VERTEX = 9;   // pos(3) + uv(2) + tint(3) + light(1)
     private static final int TINT_OFFSET       = 5;   // tint rgb follows pos + uv
     private static final int UV_OFFSET         = 3;   // uv follows pos
+    private static final int LIGHT_OFFSET      = 8;   // light follows tint
     private static final int VERTICES_PER_FACE = 4;
     private static final int FACES             = 6;
     private static final int TRIANGLES_PER_FACE = 2;
@@ -64,6 +65,14 @@ class MeshTest {
             assertTrue(r >= 0f && r <= 1f, "Red out of [0,1]: " + r);
             assertTrue(g >= 0f && g <= 1f, "Green out of [0,1]: " + g);
             assertTrue(b >= 0f && b <= 1f, "Blue out of [0,1]: " + b);
+        }
+    }
+
+    @Test
+    void cubeVerticesCarryFullLight() {
+        float[] v = Mesh.buildCubeVertices();
+        for (int i = LIGHT_OFFSET; i < v.length; i += FLOATS_PER_VERTEX) {
+            assertEquals(1.0f, v[i], 1e-6f, "Cube vertex light must be full so position-only shaders match stride");
         }
     }
 

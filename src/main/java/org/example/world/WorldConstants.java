@@ -22,6 +22,14 @@ public final class WorldConstants {
     public static final byte BLOCK_WATER   = 6;
     public static final byte BLOCK_IRON    = 7;
     public static final byte BLOCK_DIAMOND = 8;
+    public static final byte BLOCK_TORCH   = 9;
+
+    // Lighting (STEP-21). Skylight and blocklight are 4-bit levels packed in one byte per cell; the
+    // brightest reachable level is MAX_LIGHT_LEVEL and each block of travel drops the level by one.
+    // A torch is the only emitter so far; TORCH_EMISSION is its source level (one below full so its
+    // own cell is bright but a lit room still reads darker than open sky).
+    public static final int  MAX_LIGHT_LEVEL = 15;
+    public static final int  TORCH_EMISSION  = 14;
 
     // Ore scatter into underground stone (see OreStage). One eligible stone block in RARITY
     // (statistically) becomes the ore. Diamond is rarer and confined to the deepest layers.

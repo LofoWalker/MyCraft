@@ -2,6 +2,7 @@ package org.example.systems;
 
 import org.example.components.ChunkComponent;
 import org.example.components.ChunkDirty;
+import org.example.components.ChunkLight;
 import org.example.components.ChunkMeshComponent;
 import org.example.components.PlayerInput;
 import org.example.components.Position;
@@ -11,6 +12,7 @@ import org.example.ecs.GameSystem;
 import org.example.ecs.World;
 import org.example.render.Mesh;
 import org.example.systems.ChunkMeshingSystem.ChunkGeometry;
+import org.example.world.LightEngine;
 import org.example.world.WorldConstants;
 import org.example.worldgen.GenerationPipeline;
 
@@ -24,7 +26,10 @@ import java.util.concurrent.Executors;
 
 public final class ChunkStreamingSystem implements GameSystem, AutoCloseable {
 
-    private record ChunkResult(long key, int entityId, VoxelChunkData data, ChunkGeometry geometry) {}
+    // newData is the freshly generated voxel data for a first load, or null for a remesh (the chunk's
+    // existing VoxelChunkData was edited in place and stays in the World). light is the baked field.
+    private record ChunkResult(long key, int entityId, VoxelChunkData newData, byte[] light,
+                               ChunkGeometry geometry) {}
 
     private final GenerationPipeline generation;
     private final ExecutorService workers = Executors.newVirtualThreadPerTaskExecutor();
@@ -49,17 +54,29 @@ public final class ChunkStreamingSystem implements GameSystem, AutoCloseable {
         remeshDirtyChunks(world);
     }
 
-    // Block edits (BlockInteractionSystem) mutate voxel data in place and flag the chunk dirty.
-    // Rebuild the mesh here on the main thread, where this system owns the GL mesh lifecycle.
+    // Block edits (BlockInteractionSystem) mutate voxel data in place and flag the chunk dirty. The
+    // light bake + remesh are CPU-heavy, so they run on the workers (same path as generation) and the
+    // GL upload happens later in applyReadyChunks on the main thread. ChunkDirty is cleared at submit
+    // time; a follow-up edit re-flags it and submits a fresh task that re-reads the mutated data.
     private void remeshDirtyChunks(World world) {
-        for (int eid : world.query(ChunkDirty.class, VoxelChunkData.class)) {
+        for (int eid : world.query(ChunkDirty.class, VoxelChunkData.class, ChunkComponent.class)) {
             Entity entity = new Entity(eid);
             VoxelChunkData data = world.get(entity, VoxelChunkData.class).orElseThrow();
-            ChunkGeometry geometry = ChunkMeshingSystem.buildGeometry(data);
-            closeMeshes(eid);
-            uploadMeshes(world, entity, geometry);
+            ChunkComponent chunk = world.get(entity, ChunkComponent.class).orElseThrow();
+            long key = CollisionSystem.chunkKey(chunk.x(), chunk.z());
             world.remove(entity, ChunkDirty.class);
+            submitRemesh(key, eid, data);
         }
+    }
+
+    // Light + geometry are pure CPU work; they never touch the World or OpenGL. The existing data
+    // array stays in the World (newData=null) so applyReadyChunks only swaps the light + meshes.
+    private void submitRemesh(long key, int entityId, VoxelChunkData data) {
+        workers.submit(() -> {
+            byte[] light = LightEngine.computeLight(data);
+            ChunkGeometry geometry = ChunkMeshingSystem.buildGeometry(data, light);
+            ready.add(new ChunkResult(key, entityId, null, light, geometry));
+        });
     }
 
     // Uploads opaque + (optional) water geometry to GL and registers both for lifecycle cleanup.
@@ -110,13 +127,14 @@ public final class ChunkStreamingSystem implements GameSystem, AutoCloseable {
         submitGeneration(key, entity.id(), cx, cz);
     }
 
-    // Generation + geometry are pure CPU work; they never touch the World or OpenGL.
+    // Generation + light + geometry are pure CPU work; they never touch the World or OpenGL.
     private void submitGeneration(long key, int entityId, int cx, int cz) {
         workers.submit(() -> {
             VoxelChunkData data = VoxelChunkData.empty();
             generation.generate(data, cx, cz);
-            ChunkGeometry geometry = ChunkMeshingSystem.buildGeometry(data);
-            ready.add(new ChunkResult(key, entityId, data, geometry));
+            byte[] light = LightEngine.computeLight(data);
+            ChunkGeometry geometry = ChunkMeshingSystem.buildGeometry(data, light);
+            ready.add(new ChunkResult(key, entityId, data, light, geometry));
         });
     }
 
@@ -157,7 +175,9 @@ public final class ChunkStreamingSystem implements GameSystem, AutoCloseable {
 
     private void applyChunk(World world, ChunkResult result) {
         Entity entity = new Entity(result.entityId());
-        world.add(entity, result.data());
+        if (result.newData() != null) world.add(entity, result.newData());
+        world.add(entity, new ChunkLight(result.light()));
+        closeMeshes(result.entityId());
         uploadMeshes(world, entity, result.geometry());
     }
 

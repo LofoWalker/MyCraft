@@ -87,6 +87,7 @@ public class Main {
         inventory = Inventories.add(inventory, new ItemStack(WorldConstants.BLOCK_STONE, WorldConstants.MAX_STACK)).inventory();
         inventory = Inventories.add(inventory, new ItemStack(WorldConstants.BLOCK_DIRT,  WorldConstants.MAX_STACK)).inventory();
         inventory = Inventories.add(inventory, new ItemStack(WorldConstants.BLOCK_WOOD,  WorldConstants.MAX_STACK)).inventory();
+        inventory = Inventories.add(inventory, new ItemStack(WorldConstants.BLOCK_TORCH, WorldConstants.MAX_STACK)).inventory();
         return inventory;
     }
 

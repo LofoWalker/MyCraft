@@ -3,6 +3,7 @@ package org.example.systems;
 import org.example.components.VoxelChunkData;
 import org.example.render.TextureAtlas;
 import org.example.world.BlockType;
+import org.example.world.LightEngine;
 import org.example.world.WorldConstants;
 import org.junit.jupiter.api.Test;
 
@@ -10,9 +11,10 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class ChunkMeshingSystemTest {
 
-    private static final int FLOATS_PER_VERTEX  = 8;   // pos(3) + uv(2) + tint(3)
+    private static final int FLOATS_PER_VERTEX  = 9;   // pos(3) + uv(2) + tint(3) + light(1)
     private static final int UV_OFFSET          = 3;
     private static final int TINT_OFFSET        = 5;
+    private static final int LIGHT_OFFSET       = 8;
     private static final int VERTICES_PER_FACE  = 4;
     private static final int INDICES_PER_FACE   = 6;
     private static final int FACES_PER_BLOCK    = 6;
@@ -238,6 +240,48 @@ class ChunkMeshingSystemTest {
         // The surface is lowered by WATER_SURFACE_DROP below the upper cell's ceiling (y=2).
         float expectedSurfaceY = 2f - WorldConstants.WATER_SURFACE_DROP;
         assertEquals(expectedSurfaceY, maxY, 1e-6f, "Water surface must be lowered under air");
+    }
+
+    // --- STEP-21: per-face vertex lighting ----------------------------------------------------
+
+    @Test
+    void exposedFaceCarriesNeighbourCellLight() {
+        VoxelChunkData data = VoxelChunkData.empty();
+        int bx = 4, by = 4, bz = 4;
+        data.set(bx, by, bz, WorldConstants.BLOCK_STONE);
+
+        // Hand-built light field: the air cell directly above the block carries skylight 9.
+        byte[] light = new byte[WorldConstants.CHUNK_SIZE_XZ * WorldConstants.CHUNK_SIZE_XZ
+                * WorldConstants.WORLD_HEIGHT];
+        int expectedLevel = 9;
+        light[cellIndex(bx, by + 1, bz)] = packSkylight(expectedLevel);
+
+        float[] v = ChunkMeshingSystem.buildGeometry(data, light).opaque().vertices();
+
+        float topFaceLight = v[FACE_TOP * VERTICES_PER_FACE * FLOATS_PER_VERTEX + LIGHT_OFFSET];
+        assertEquals(expectedLevel / (float) WorldConstants.MAX_LIGHT_LEVEL, topFaceLight, 1e-6f,
+                "Top face must carry the light level of the air cell above it");
+    }
+
+    @Test
+    void exposedSkyFaceIsFullyLitViaLightEngine() {
+        VoxelChunkData data = VoxelChunkData.empty();
+        data.set(0, 0, 0, WorldConstants.BLOCK_STONE); // open-sky column → top neighbour skylight 15
+
+        float[] v = ChunkMeshingSystem.buildGeometry(data,
+                LightEngine.computeLight(data)).opaque().vertices();
+
+        float topFaceLight = v[FACE_TOP * VERTICES_PER_FACE * FLOATS_PER_VERTEX + LIGHT_OFFSET];
+        assertEquals(1.0f, topFaceLight, 1e-6f, "An open-sky top face must be fully lit");
+    }
+
+    private static int cellIndex(int x, int y, int z) {
+        int sx = WorldConstants.CHUNK_SIZE_XZ;
+        return x + z * sx + y * sx * sx;
+    }
+
+    private static byte packSkylight(int level) {
+        return (byte) (level << 4);
     }
 
     @Test

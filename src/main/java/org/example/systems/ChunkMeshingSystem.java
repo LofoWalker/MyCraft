@@ -1,6 +1,7 @@
 package org.example.systems;
 
 import org.example.components.ChunkComponent;
+import org.example.components.ChunkLight;
 import org.example.components.ChunkMeshComponent;
 import org.example.components.VoxelChunkData;
 import org.example.ecs.Entity;
@@ -9,6 +10,7 @@ import org.example.ecs.World;
 import org.example.render.Mesh;
 import org.example.render.TextureAtlas;
 import org.example.world.BlockType;
+import org.example.world.LightEngine;
 import org.example.world.WorldConstants;
 
 import java.util.ArrayList;
@@ -39,7 +41,12 @@ public final class ChunkMeshingSystem implements GameSystem, AutoCloseable {
 
     private static final int FACE_TOP          = 2;
     private static final int FACE_BOTTOM       = 3;
-    private static final int FLOATS_PER_VERTEX = 8; // pos(3) + uv(2) + tint(3)
+    private static final int FLOATS_PER_VERTEX = 9; // pos(3) + uv(2) + tint(3) + light(1)
+
+    // An exposed face borders an out-of-bounds neighbour (chunk seam) where no light is computed; we
+    // assume open sky there so seams stay lit rather than artificially dark (see LightEngine borders).
+    private static final float EDGE_LIGHT = 1.0f;
+    private static final float LIGHT_NORMALIZER = WorldConstants.MAX_LIGHT_LEVEL;
 
     // Solid blocks fill their cell to the ceiling; water's top edge is lowered (beta surface).
     private static final float FULL_TOP  = 1.0f;
@@ -64,12 +71,15 @@ public final class ChunkMeshingSystem implements GameSystem, AutoCloseable {
             Entity entity = new Entity(eid);
             if (world.has(entity, ChunkMeshComponent.class)) continue;
             VoxelChunkData data = world.get(entity, VoxelChunkData.class).orElseThrow();
-            world.add(entity, buildMeshes(data));
+            byte[] light = world.get(entity, ChunkLight.class)
+                    .map(ChunkLight::light)
+                    .orElseGet(() -> LightEngine.computeLight(data));
+            world.add(entity, buildMeshes(data, light));
         }
     }
 
-    private ChunkMeshComponent buildMeshes(VoxelChunkData data) {
-        ChunkGeometry geo = buildGeometry(data);
+    private ChunkMeshComponent buildMeshes(VoxelChunkData data, byte[] light) {
+        ChunkGeometry geo = buildGeometry(data, light);
         Mesh opaque = Mesh.create(geo.opaque().vertices(), geo.opaque().indices());
         generatedMeshes.add(opaque);
         Mesh water = null;
@@ -80,9 +90,16 @@ public final class ChunkMeshingSystem implements GameSystem, AutoCloseable {
         return ChunkMeshComponent.of(opaque, water);
     }
 
-    // Package-private: pure data transform — testable without GL context. Produces opaque solid
-    // geometry and translucent water geometry separately so water can be drawn in its own pass.
+    // Test/fallback overload: bakes the chunk's light on the spot. The live streaming path passes a
+    // precomputed light array (computed on the workers alongside generation/remesh).
     static ChunkGeometry buildGeometry(VoxelChunkData data) {
+        return buildGeometry(data, LightEngine.computeLight(data));
+    }
+
+    // Package-private: pure data transform — testable without GL context. Produces opaque solid
+    // geometry and translucent water geometry separately so water can be drawn in its own pass. Each
+    // exposed face carries the light level of the air cell it faces (normalized to 0..1).
+    static ChunkGeometry buildGeometry(VoxelChunkData data, byte[] light) {
         int SX = WorldConstants.CHUNK_SIZE_XZ;
         int H  = WorldConstants.WORLD_HEIGHT;
         MeshBuilder opaque = new MeshBuilder();
@@ -91,27 +108,30 @@ public final class ChunkMeshingSystem implements GameSystem, AutoCloseable {
             for (int z = 0; z < SX; z++)
                 for (int x = 0; x < SX; x++) {
                     byte block = data.get(x, y, z);
-                    if (block == WorldConstants.BLOCK_WATER) appendWaterFaces(water, data, x, y, z);
-                    else if (block != WorldConstants.BLOCK_AIR) appendVisibleFaces(opaque, data, x, y, z, block);
+                    if (block == WorldConstants.BLOCK_WATER) appendWaterFaces(water, data, light, x, y, z);
+                    else if (block != WorldConstants.BLOCK_AIR) appendVisibleFaces(opaque, data, light, x, y, z, block);
                 }
         return new ChunkGeometry(opaque.toGeometry(), water.toGeometry());
     }
 
-    private static void appendVisibleFaces(MeshBuilder builder, VoxelChunkData data, int x, int y, int z, byte block) {
+    private static void appendVisibleFaces(MeshBuilder builder, VoxelChunkData data, byte[] light,
+                                           int x, int y, int z, byte block) {
         for (int face = 0; face < 6; face++) {
             int nx = x + FACE_NEIGHBOR[face][0];
             int ny = y + FACE_NEIGHBOR[face][1];
             int nz = z + FACE_NEIGHBOR[face][2];
             if (isAirOrOutOfBounds(data, nx, ny, nz)) {
                 BlockType type = BlockType.byId(block);
-                builder.addFace(x, y, z, face, blockFaceUv(type, face), type.tint(), FULL_TOP);
+                builder.addFace(x, y, z, face, blockFaceUv(type, face), type.tint(), FULL_TOP,
+                        faceLight(light, nx, ny, nz));
             }
         }
     }
 
     // A water face is emitted only when its neighbour is NOT water (no faces between two water
     // cells); the water surface is lowered to WATER_TOP so it reads as a sunken sheet.
-    private static void appendWaterFaces(MeshBuilder builder, VoxelChunkData data, int x, int y, int z) {
+    private static void appendWaterFaces(MeshBuilder builder, VoxelChunkData data, byte[] light,
+                                         int x, int y, int z) {
         float[] uv = TextureAtlas.uvForTile(BlockType.WATER.tileTop());
         float[] tint = BlockType.WATER.tint();
         for (int face = 0; face < 6; face++) {
@@ -119,9 +139,20 @@ public final class ChunkMeshingSystem implements GameSystem, AutoCloseable {
             int ny = y + FACE_NEIGHBOR[face][1];
             int nz = z + FACE_NEIGHBOR[face][2];
             if (!isWater(data, nx, ny, nz)) {
-                builder.addFace(x, y, z, face, uv, tint, WATER_TOP);
+                builder.addFace(x, y, z, face, uv, tint, WATER_TOP, faceLight(light, nx, ny, nz));
             }
         }
+    }
+
+    // Normalized brightness of the (air) cell a face is exposed to. Out-of-bounds neighbours sit on a
+    // chunk seam with no baked light, so they read as open sky (EDGE_LIGHT) — see the LightEngine note.
+    private static float faceLight(byte[] light, int nx, int ny, int nz) {
+        int SX = WorldConstants.CHUNK_SIZE_XZ;
+        if (nx < 0 || nx >= SX || ny < 0 || ny >= WorldConstants.WORLD_HEIGHT || nz < 0 || nz >= SX) {
+            return EDGE_LIGHT;
+        }
+        int idx = nx + nz * SX + ny * SX * SX;
+        return LightEngine.effectiveLevel(light[idx]) / LIGHT_NORMALIZER;
     }
 
     private static boolean isAirOrOutOfBounds(VoxelChunkData data, int x, int y, int z) {
@@ -172,8 +203,9 @@ public final class ChunkMeshingSystem implements GameSystem, AutoCloseable {
         private int iOffset = 0;
 
         // topY replaces the y=1 vertices' height so water can sit below the cell ceiling; solid
-        // blocks pass topY = 1.0 and are unaffected.
-        void addFace(int bx, int by, int bz, int face, float[] uv, float[] tint, float topY) {
+        // blocks pass topY = 1.0 and are unaffected. light is the normalized 0..1 brightness of the
+        // neighbour air cell, written identically to all four vertices (flat per-face shading).
+        void addFace(int bx, int by, int bz, int face, float[] uv, float[] tint, float topY, float light) {
             ensureCapacity();
             float[] off = FACE_OFFSETS[face];
             int baseVertex = vOffset / FLOATS_PER_VERTEX;
@@ -187,6 +219,7 @@ public final class ChunkMeshingSystem implements GameSystem, AutoCloseable {
                 vertices[vOffset++] = tint[0];
                 vertices[vOffset++] = tint[1];
                 vertices[vOffset++] = tint[2];
+                vertices[vOffset++] = light;
             }
             indices[iOffset++] = baseVertex;
             indices[iOffset++] = baseVertex + 1;
