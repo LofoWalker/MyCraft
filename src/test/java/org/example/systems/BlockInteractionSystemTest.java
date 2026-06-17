@@ -7,6 +7,7 @@ import org.example.components.ChunkDirty;
 import org.example.components.PlayerInput;
 import org.example.components.Position;
 import org.example.components.Rotation;
+import org.example.components.TargetedBlock;
 import org.example.components.VoxelChunkData;
 import org.example.ecs.Entity;
 import org.example.ecs.World;
@@ -14,41 +15,40 @@ import org.example.world.BlockType;
 import org.example.world.WorldConstants;
 import org.junit.jupiter.api.Test;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import static org.junit.jupiter.api.Assertions.*;
 
 class BlockInteractionSystemTest {
 
     private static final float DT = 1f / 60f;
 
-    private static Map<Long, VoxelChunkData> oneChunk(VoxelChunkData data) {
-        Map<Long, VoxelChunkData> map = new HashMap<>();
-        map.put(CollisionSystem.chunkKey(0, 0), data);
-        return map;
+    @Test
+    void targetsTheBlockBeingLookedAt() {
+        World world = new World();
+        VoxelChunkData data = VoxelChunkData.empty();
+        data.set(2, 60, 2, WorldConstants.BLOCK_STONE);
+        spawnChunk(world, data);
+        Entity player = spawnPlayer(world);
+        BlockInteractionSystem system = new BlockInteractionSystem();
+
+        system.update(world, DT);
+
+        TargetedBlock target = world.get(player, TargetedBlock.class).orElseThrow();
+        assertEquals(2, target.x());
+        assertEquals(60, target.y());
+        assertEquals(2, target.z());
     }
 
     @Test
-    void raycastHitsSolidBlockAhead() {
-        VoxelChunkData data = VoxelChunkData.empty();
-        data.set(2, 60, 2, WorldConstants.BLOCK_STONE);
+    void clearsTargetWhenLookingAtNothing() {
+        World world = new World();
+        VoxelChunkData data = VoxelChunkData.empty(); // no solid block in range
+        spawnChunk(world, data);
+        Entity player = spawnPlayer(world);
+        BlockInteractionSystem system = new BlockInteractionSystem();
 
-        int[] hit = BlockInteractionSystem.raycastSolid(
-                2.5f, 60.5f, 6.5f, 0f, 0f, -1f, WorldConstants.PLAYER_REACH, oneChunk(data));
+        system.update(world, DT);
 
-        assertArrayEquals(new int[]{2, 60, 2}, hit);
-    }
-
-    @Test
-    void raycastReturnsNullWhenNothingInReach() {
-        VoxelChunkData data = VoxelChunkData.empty();
-        data.set(2, 60, 2, WorldConstants.BLOCK_STONE);
-
-        int[] hit = BlockInteractionSystem.raycastSolid(
-                2.5f, 60.5f, 30.5f, 0f, 0f, -1f, WorldConstants.PLAYER_REACH, oneChunk(data));
-
-        assertNull(hit);
+        assertFalse(world.has(player, TargetedBlock.class));
     }
 
     @Test

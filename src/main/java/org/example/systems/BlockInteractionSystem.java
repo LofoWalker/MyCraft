@@ -7,19 +7,24 @@ import org.example.components.ChunkDirty;
 import org.example.components.PlayerInput;
 import org.example.components.Position;
 import org.example.components.Rotation;
+import org.example.components.TargetedBlock;
 import org.example.components.VoxelChunkData;
 import org.example.ecs.Entity;
 import org.example.ecs.GameSystem;
 import org.example.ecs.World;
 import org.example.world.BlockType;
+import org.example.world.ChunkView;
+import org.example.world.VoxelRaycast;
 import org.example.world.WorldConstants;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
-// Lets the player break the block they look at: casts a ray from the eye along the view direction
-// and accumulates damage on the first solid voxel within reach. A block breaks only once the damage
-// dealt reaches its hardness, so harder blocks need more hits; switching target resets progress.
+// Drives block targeting and breaking: every tick it raycasts from the eye along the view direction
+// (via the shared VoxelRaycast) and records the looked-at voxel as TargetedBlock for the renderer.
+// On a fresh break press it accumulates damage on that voxel; a block breaks only once the damage
+// reaches its hardness, so harder blocks need more hits and switching target resets progress.
 // Edge-triggered (one hit per press). Mesh rebuilding is owned by ChunkStreamingSystem.
 public final class BlockInteractionSystem implements GameSystem {
 
@@ -33,20 +38,40 @@ public final class BlockInteractionSystem implements GameSystem {
 
         Entity      player = new Entity(players[0]);
         PlayerInput input  = world.get(player, PlayerInput.class).orElseThrow();
-        boolean breakNow   = input.breakBlock();
-        boolean justPressed = breakNow && !breakHeldPreviously;
-        breakHeldPreviously = breakNow;
-        if (!justPressed) return;
+        Position    pos    = world.get(player, Position.class).orElseThrow();
+        Rotation    rot    = world.get(player, Rotation.class).orElseThrow();
 
-        Position pos = world.get(player, Position.class).orElseThrow();
-        Rotation rot = world.get(player, Rotation.class).orElseThrow();
-        hitTargetedBlock(world, player, pos, rot);
-    }
-
-    private void hitTargetedBlock(World world, Entity player, Position pos, Rotation rot) {
         Map<Long, Integer>        chunkEntities = new HashMap<>();
         Map<Long, VoxelChunkData> chunkData     = buildChunkMaps(world, chunkEntities);
+        Optional<VoxelRaycast.RaycastHit> hit   = castFromEye(pos, rot, chunkData);
 
+        updateTarget(world, player, hit);
+        applyBreak(world, player, input, hit, chunkEntities, chunkData);
+    }
+
+    private void updateTarget(World world, Entity player, Optional<VoxelRaycast.RaycastHit> hit) {
+        if (hit.isPresent()) {
+            VoxelRaycast.RaycastHit h = hit.get();
+            world.add(player, new TargetedBlock(h.x(), h.y(), h.z(), h.faceX(), h.faceY(), h.faceZ()));
+        } else {
+            world.remove(player, TargetedBlock.class);
+        }
+    }
+
+    private void applyBreak(World world, Entity player, PlayerInput input,
+                            Optional<VoxelRaycast.RaycastHit> hit,
+                            Map<Long, Integer> chunkEntities, Map<Long, VoxelChunkData> chunkData) {
+        boolean breakNow    = input.breakBlock();
+        boolean justPressed = breakNow && !breakHeldPreviously;
+        breakHeldPreviously = breakNow;
+        if (!justPressed || hit.isEmpty()) return;
+
+        VoxelRaycast.RaycastHit h = hit.get();
+        damageBlock(world, player, h.x(), h.y(), h.z(), chunkEntities, chunkData);
+    }
+
+    private static Optional<VoxelRaycast.RaycastHit> castFromEye(Position pos, Rotation rot,
+                                                                 Map<Long, VoxelChunkData> chunkData) {
         float yawRad   = (float) Math.toRadians(rot.yaw());
         float pitchRad = (float) Math.toRadians(rot.pitch());
         float cosPitch = (float) Math.cos(pitchRad);
@@ -58,9 +83,8 @@ public final class BlockInteractionSystem implements GameSystem {
         float eyeY = pos.y() + WorldConstants.PLAYER_EYE_HEIGHT;
         float eyeZ = pos.z();
 
-        int[] hit = raycastSolid(eyeX, eyeY, eyeZ, dirX, dirY, dirZ, WorldConstants.PLAYER_REACH, chunkData);
-        if (hit == null) return;
-        damageBlock(world, player, hit[0], hit[1], hit[2], chunkEntities, chunkData);
+        ChunkView view = (wx, wy, wz) -> CollisionSystem.isSolid(wx, wy, wz, chunkData);
+        return VoxelRaycast.cast(eyeX, eyeY, eyeZ, dirX, dirY, dirZ, WorldConstants.PLAYER_REACH, view);
     }
 
     private void damageBlock(World world, Entity player, int wx, int wy, int wz,
@@ -103,43 +127,6 @@ public final class BlockInteractionSystem implements GameSystem {
 
         data.set(wx - cx * s, wy, wz - cz * s, WorldConstants.BLOCK_AIR);
         world.add(new Entity(entityId), new ChunkDirty());
-    }
-
-    // Amanatides & Woo voxel traversal: walks integer cells along the ray, returning the first
-    // solid voxel within reach, or null if the ray reaches nothing.
-    static int[] raycastSolid(float ox, float oy, float oz, float dx, float dy, float dz,
-                              float reach, Map<Long, VoxelChunkData> chunkData) {
-        int ix = (int) Math.floor(ox);
-        int iy = (int) Math.floor(oy);
-        int iz = (int) Math.floor(oz);
-        int stepX = signum(dx), stepY = signum(dy), stepZ = signum(dz);
-        float tDeltaX = dx != 0 ? Math.abs(1f / dx) : Float.POSITIVE_INFINITY;
-        float tDeltaY = dy != 0 ? Math.abs(1f / dy) : Float.POSITIVE_INFINITY;
-        float tDeltaZ = dz != 0 ? Math.abs(1f / dz) : Float.POSITIVE_INFINITY;
-        float tMaxX = boundaryDistance(ox, dx, stepX);
-        float tMaxY = boundaryDistance(oy, dy, stepY);
-        float tMaxZ = boundaryDistance(oz, dz, stepZ);
-
-        float traveled = 0f;
-        while (traveled <= reach) {
-            if (CollisionSystem.isSolid(ix, iy, iz, chunkData)) return new int[]{ix, iy, iz};
-            if (tMaxX < tMaxY && tMaxX < tMaxZ) { ix += stepX; traveled = tMaxX; tMaxX += tDeltaX; }
-            else if (tMaxY < tMaxZ)             { iy += stepY; traveled = tMaxY; tMaxY += tDeltaY; }
-            else                                { iz += stepZ; traveled = tMaxZ; tMaxZ += tDeltaZ; }
-        }
-        return null;
-    }
-
-    private static int signum(float v) {
-        return v > 0 ? 1 : (v < 0 ? -1 : 0);
-    }
-
-    // Distance along the ray from the origin to the first voxel boundary it crosses on this axis.
-    private static float boundaryDistance(float origin, float dir, int step) {
-        if (step == 0) return Float.POSITIVE_INFINITY;
-        float cell = (float) Math.floor(origin);
-        float nextBoundary = step > 0 ? cell + 1f : cell;
-        return (nextBoundary - origin) / dir;
     }
 
     private static Map<Long, VoxelChunkData> buildChunkMaps(World world, Map<Long, Integer> entitiesOut) {
