@@ -8,20 +8,25 @@ import org.example.ecs.GameSystem;
 import org.example.ecs.World;
 import org.example.render.Frustum;
 import org.example.render.Shader;
+import org.example.render.TextureAtlas;
 import org.example.world.WorldConstants;
 import org.joml.Matrix4f;
 
 public final class RenderSystem implements GameSystem {
 
-    private final Shader shader;
+    private static final int ATLAS_TEXTURE_UNIT = 0;
+
+    private final Shader       shader;
+    private final TextureAtlas atlas;
 
     // Reused every frame: the per-chunk draw loop must not allocate.
     private final Frustum  frustum        = new Frustum();
     private final Matrix4f viewProjection = new Matrix4f();
     private final Matrix4f model          = new Matrix4f();
 
-    public RenderSystem(Shader shader) {
+    public RenderSystem(Shader shader, TextureAtlas atlas) {
         this.shader = shader;
+        this.atlas  = atlas;
     }
 
     @Override
@@ -34,6 +39,9 @@ public final class RenderSystem implements GameSystem {
         frustum.update(viewProjection);
 
         shader.bind();
+        // One atlas bind for the whole chunk pass: every chunk samples the same texture on unit 0.
+        atlas.bind(ATLAS_TEXTURE_UNIT);
+        shader.setUniform1i("uAtlas", ATLAS_TEXTURE_UNIT);
         shader.setUniformMatrix4f("uView",       camera.view());
         shader.setUniformMatrix4f("uProjection", camera.projection());
 

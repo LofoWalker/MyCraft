@@ -50,13 +50,23 @@ class ShaderTest {
     void vertexShaderDeclaresMeshAttributes() {
         String src = Shader.readResource("/shaders/basic.vert");
         assertTrue(src.contains("aPosition"), "Missing aPosition attribute");
-        assertTrue(src.contains("aColor"),    "Missing aColor attribute");
+        assertTrue(src.contains("aUV"),       "Missing aUV attribute");
+        assertTrue(src.contains("aTint"),     "Missing aTint attribute");
     }
 
     @Test
-    void vertexShaderPassesColorVaryingToFragment() {
+    void vertexShaderPassesUvAndTintVaryingsToFragment() {
         String src = Shader.readResource("/shaders/basic.vert");
-        assertTrue(src.contains("vColor"), "Missing vColor varying output");
+        assertTrue(src.contains("vUV"),   "Missing vUV varying output");
+        assertTrue(src.contains("vTint"), "Missing vTint varying output");
+    }
+
+    @Test
+    void fragmentShaderSamplesAtlasUniform() {
+        String src = Shader.readResource("/shaders/basic.frag");
+        assertTrue(src.contains("sampler2D"), "Missing sampler2D atlas uniform");
+        assertTrue(src.contains("uAtlas"),    "Missing uAtlas uniform");
+        assertTrue(src.contains("texture("),  "Fragment shader must sample the atlas texture");
     }
 
     @Test

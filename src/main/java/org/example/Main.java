@@ -5,6 +5,7 @@ import org.example.ecs.Entity;
 import org.example.ecs.SystemScheduler;
 import org.example.ecs.World;
 import org.example.render.Shader;
+import org.example.render.TextureAtlas;
 import org.example.systems.*;
 import org.example.world.Inventories;
 import org.example.world.WorldConstants;
@@ -47,6 +48,7 @@ public class Main {
         window.captureCursor();
 
         try (Shader shader = Shader.fromResources("/shaders/basic.vert", "/shaders/basic.frag");
+             TextureAtlas atlas = TextureAtlas.loadFromClasspath("/textures/blocks.png");
              ChunkStreamingSystem chunkStreaming = new ChunkStreamingSystem(seed);
              SkySystem sky = new SkySystem();
              BlockHighlightSystem blockHighlight = new BlockHighlightSystem();
@@ -67,7 +69,7 @@ public class Main {
             renderScheduler.add(new CameraSystem(window.getAspectRatio()));
             renderScheduler.add(sky);
             renderScheduler.add(chunkStreaming);
-            renderScheduler.add(new RenderSystem(shader));
+            renderScheduler.add(new RenderSystem(shader, atlas));
             renderScheduler.add(blockHighlight);
             renderScheduler.add(breakOverlay);
             renderScheduler.add(itemRender);

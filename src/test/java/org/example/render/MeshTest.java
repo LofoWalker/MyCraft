@@ -6,7 +6,9 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class MeshTest {
 
-    private static final int FLOATS_PER_VERTEX = 6;   // xyz + rgb
+    private static final int FLOATS_PER_VERTEX = 8;   // pos(3) + uv(2) + tint(3)
+    private static final int TINT_OFFSET       = 5;   // tint rgb follows pos + uv
+    private static final int UV_OFFSET         = 3;   // uv follows pos
     private static final int VERTICES_PER_FACE = 4;
     private static final int FACES             = 6;
     private static final int TRIANGLES_PER_FACE = 2;
@@ -55,13 +57,23 @@ class MeshTest {
     }
 
     @Test
-    void vertexColorComponentsAreInUnitRange() {
+    void vertexTintComponentsAreInUnitRange() {
         float[] v = Mesh.buildCubeVertices();
-        for (int i = 3; i < v.length; i += FLOATS_PER_VERTEX) {
+        for (int i = TINT_OFFSET; i < v.length; i += FLOATS_PER_VERTEX) {
             float r = v[i], g = v[i + 1], b = v[i + 2];
             assertTrue(r >= 0f && r <= 1f, "Red out of [0,1]: " + r);
             assertTrue(g >= 0f && g <= 1f, "Green out of [0,1]: " + g);
             assertTrue(b >= 0f && b <= 1f, "Blue out of [0,1]: " + b);
+        }
+    }
+
+    @Test
+    void vertexUvComponentsAreInUnitRange() {
+        float[] v = Mesh.buildCubeVertices();
+        for (int i = UV_OFFSET; i < v.length; i += FLOATS_PER_VERTEX) {
+            float u = v[i], uv = v[i + 1];
+            assertTrue(u >= 0f && u <= 1f, "U out of [0,1]: " + u);
+            assertTrue(uv >= 0f && uv <= 1f, "V out of [0,1]: " + uv);
         }
     }
 

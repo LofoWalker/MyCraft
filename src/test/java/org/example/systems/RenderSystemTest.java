@@ -13,7 +13,7 @@ class RenderSystemTest {
     @Test
     void skipsRenderWhenNoCameraEntity() {
         World world = new World();
-        RenderSystem system = new RenderSystem(null);
+        RenderSystem system = new RenderSystem(null, null);
         assertDoesNotThrow(() -> system.update(world, 0.016f));
     }
 
@@ -21,7 +21,7 @@ class RenderSystemTest {
     void skipsRenderForEntityWithoutRenderCamera() {
         World world = new World();
         world.create(); // entity with no RenderCamera
-        RenderSystem system = new RenderSystem(null);
+        RenderSystem system = new RenderSystem(null, null);
         assertDoesNotThrow(() -> system.update(world, 0.016f));
     }
 

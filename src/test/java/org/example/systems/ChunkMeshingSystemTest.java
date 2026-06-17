@@ -1,6 +1,8 @@
 package org.example.systems;
 
 import org.example.components.VoxelChunkData;
+import org.example.render.TextureAtlas;
+import org.example.world.BlockType;
 import org.example.world.WorldConstants;
 import org.junit.jupiter.api.Test;
 
@@ -8,10 +10,16 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class ChunkMeshingSystemTest {
 
-    private static final int FLOATS_PER_VERTEX  = 6;
+    private static final int FLOATS_PER_VERTEX  = 8;   // pos(3) + uv(2) + tint(3)
+    private static final int UV_OFFSET          = 3;
+    private static final int TINT_OFFSET        = 5;
     private static final int VERTICES_PER_FACE  = 4;
     private static final int INDICES_PER_FACE   = 6;
     private static final int FACES_PER_BLOCK    = 6;
+
+    // Face order follows FACE_OFFSETS: 0=Front, 1=Back, 2=Top, 3=Bottom, 4=Right, 5=Left.
+    private static final int FACE_FRONT = 0;
+    private static final int FACE_TOP   = 2;
 
     @Test
     void emptyChunkProducesNoGeometry() {
@@ -68,18 +76,31 @@ class ChunkMeshingSystemTest {
     }
 
     @Test
-    void vertexColorsAreInUnitRange() {
+    void vertexTintComponentsAreInUnitRange() {
         VoxelChunkData data = VoxelChunkData.empty();
         data.set(0, 0, 0, WorldConstants.BLOCK_GRASS);
         data.set(1, 0, 0, WorldConstants.BLOCK_DIRT);
         data.set(2, 0, 0, WorldConstants.BLOCK_STONE);
 
         float[] vertices = ChunkMeshingSystem.buildGeometry(data).vertices();
-        for (int i = 3; i < vertices.length; i += FLOATS_PER_VERTEX) {
+        for (int i = TINT_OFFSET; i < vertices.length; i += FLOATS_PER_VERTEX) {
             float r = vertices[i], g = vertices[i + 1], b = vertices[i + 2];
             assertTrue(r >= 0f && r <= 1f, "Red out of [0,1]: " + r);
             assertTrue(g >= 0f && g <= 1f, "Green out of [0,1]: " + g);
             assertTrue(b >= 0f && b <= 1f, "Blue out of [0,1]: " + b);
+        }
+    }
+
+    @Test
+    void vertexUvComponentsAreInUnitRange() {
+        VoxelChunkData data = VoxelChunkData.empty();
+        data.set(0, 0, 0, WorldConstants.BLOCK_GRASS);
+
+        float[] v = ChunkMeshingSystem.buildGeometry(data).vertices();
+        for (int i = UV_OFFSET; i < v.length; i += FLOATS_PER_VERTEX) {
+            float u = v[i], uv = v[i + 1];
+            assertTrue(u >= 0f && u <= 1f, "U out of [0,1]: " + u);
+            assertTrue(uv >= 0f && uv <= 1f, "V out of [0,1]: " + uv);
         }
     }
 
@@ -97,32 +118,43 @@ class ChunkMeshingSystemTest {
     }
 
     @Test
-    void grassTopFaceIsGreenAndSideFaceIsBrown() {
+    void grassTopFaceCarriesTopTileAndSideFaceCarriesSideTile() {
         VoxelChunkData data = VoxelChunkData.empty();
         data.set(0, 0, 0, WorldConstants.BLOCK_GRASS);
 
         float[] v = ChunkMeshingSystem.buildGeometry(data).vertices();
 
-        // Face order follows FACE_OFFSETS: 0=Front, 1=Back, 2=Top, 3=Bottom, 4=Right, 5=Left
-        int topFaceStart  = 2 * VERTICES_PER_FACE * FLOATS_PER_VERTEX; // face 2
-        int sideFaceStart = 0; // face 0 (Front)
-
-        float topG  = v[topFaceStart  + 4];
-        float sideG = v[sideFaceStart + 4];
-
-        assertTrue(topG > sideG, "Grass top face should be greener than its side faces");
+        assertArrayEquals(TextureAtlas.uvForTile(BlockType.GRASS.tileTop()),
+                faceUvRect(v, FACE_TOP), 1e-6f, "Top face must carry grass top tile UVs");
+        assertArrayEquals(TextureAtlas.uvForTile(BlockType.GRASS.tileSide()),
+                faceUvRect(v, FACE_FRONT), 1e-6f, "Side (front) face must carry grass side tile UVs");
     }
 
     @Test
-    void unknownBlockTypeProducesMagentaColor() {
+    void unknownBlockTypeTintsMagenta() {
         VoxelChunkData data = VoxelChunkData.empty();
         data.set(0, 0, 0, (byte) 99);
 
         float[] v = ChunkMeshingSystem.buildGeometry(data).vertices();
 
-        assertEquals(1.0f, v[3], 1e-6f, "Expected R=1.0 for unknown block");
-        assertEquals(0.0f, v[4], 1e-6f, "Expected G=0.0 for unknown block");
-        assertEquals(1.0f, v[5], 1e-6f, "Expected B=1.0 for unknown block");
+        assertEquals(1.0f, v[TINT_OFFSET],     1e-6f, "Expected tint R=1.0 for unknown block");
+        assertEquals(0.0f, v[TINT_OFFSET + 1], 1e-6f, "Expected tint G=0.0 for unknown block");
+        assertEquals(1.0f, v[TINT_OFFSET + 2], 1e-6f, "Expected tint B=1.0 for unknown block");
+    }
+
+    // {minU, minV, maxU, maxV} of the four vertices of the given face — comparable to a tile's
+    // {u0,v0,u1,v1} rect regardless of which vertex got which corner.
+    private static float[] faceUvRect(float[] vertices, int face) {
+        int start = face * VERTICES_PER_FACE * FLOATS_PER_VERTEX;
+        float minU = Float.MAX_VALUE, minV = Float.MAX_VALUE;
+        float maxU = -Float.MAX_VALUE, maxV = -Float.MAX_VALUE;
+        for (int vtx = 0; vtx < VERTICES_PER_FACE; vtx++) {
+            float u = vertices[start + vtx * FLOATS_PER_VERTEX + UV_OFFSET];
+            float w = vertices[start + vtx * FLOATS_PER_VERTEX + UV_OFFSET + 1];
+            minU = Math.min(minU, u); maxU = Math.max(maxU, u);
+            minV = Math.min(minV, w); maxV = Math.max(maxV, w);
+        }
+        return new float[]{ minU, minV, maxU, maxV };
     }
 
     @Test

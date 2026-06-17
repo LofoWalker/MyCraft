@@ -9,7 +9,9 @@ import static org.lwjgl.opengl.GL30.*;
 
 public final class Mesh implements AutoCloseable {
 
-    private static final int STRIDE = 6 * Float.BYTES;
+    // pos(3) + uv(2) + tint rgb(3). The tint multiplies the sampled atlas texel in the shader.
+    static final int FLOATS_PER_VERTEX = 8;
+    private static final int STRIDE = FLOATS_PER_VERTEX * Float.BYTES;
 
     private final int vao;
     private final int vbo;
@@ -45,8 +47,10 @@ public final class Mesh implements AutoCloseable {
 
         glVertexAttribPointer(0, 3, GL_FLOAT, false, STRIDE, 0L);
         glEnableVertexAttribArray(0);
-        glVertexAttribPointer(1, 3, GL_FLOAT, false, STRIDE, 3L * Float.BYTES);
+        glVertexAttribPointer(1, 2, GL_FLOAT, false, STRIDE, 3L * Float.BYTES);
         glEnableVertexAttribArray(1);
+        glVertexAttribPointer(2, 3, GL_FLOAT, false, STRIDE, 5L * Float.BYTES);
+        glEnableVertexAttribArray(2);
 
         glBindVertexArray(0);
     }
@@ -59,39 +63,42 @@ public final class Mesh implements AutoCloseable {
         return new Mesh(vertices, indices);
     }
 
-    // Package-private: pure geometry data, no OpenGL — testable without a GL context
+    // Package-private: pure geometry data, no OpenGL — testable without a GL context.
+    // Layout per vertex: pos(3), uv(2), tint rgb(3). The cube is drawn by the highlight/item
+    // shaders, which read only position; the UVs span a full tile and the tint keeps the old
+    // per-face debug colours so anything that does sample stays sensible.
     static float[] buildCubeVertices() {
         return new float[] {
             // Front (z+) — red
-            -0.5f, -0.5f,  0.5f,  1.0f, 0.2f, 0.2f,
-             0.5f, -0.5f,  0.5f,  1.0f, 0.2f, 0.2f,
-             0.5f,  0.5f,  0.5f,  1.0f, 0.2f, 0.2f,
-            -0.5f,  0.5f,  0.5f,  1.0f, 0.2f, 0.2f,
+            -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,  1.0f, 0.2f, 0.2f,
+             0.5f, -0.5f,  0.5f,  1.0f, 0.0f,  1.0f, 0.2f, 0.2f,
+             0.5f,  0.5f,  0.5f,  1.0f, 1.0f,  1.0f, 0.2f, 0.2f,
+            -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,  1.0f, 0.2f, 0.2f,
             // Back (z-) — cyan
-             0.5f, -0.5f, -0.5f,  0.2f, 1.0f, 1.0f,
-            -0.5f, -0.5f, -0.5f,  0.2f, 1.0f, 1.0f,
-            -0.5f,  0.5f, -0.5f,  0.2f, 1.0f, 1.0f,
-             0.5f,  0.5f, -0.5f,  0.2f, 1.0f, 1.0f,
+             0.5f, -0.5f, -0.5f,  0.0f, 0.0f,  0.2f, 1.0f, 1.0f,
+            -0.5f, -0.5f, -0.5f,  1.0f, 0.0f,  0.2f, 1.0f, 1.0f,
+            -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,  0.2f, 1.0f, 1.0f,
+             0.5f,  0.5f, -0.5f,  0.0f, 1.0f,  0.2f, 1.0f, 1.0f,
             // Top (y+) — green
-            -0.5f,  0.5f,  0.5f,  0.2f, 1.0f, 0.2f,
-             0.5f,  0.5f,  0.5f,  0.2f, 1.0f, 0.2f,
-             0.5f,  0.5f, -0.5f,  0.2f, 1.0f, 0.2f,
-            -0.5f,  0.5f, -0.5f,  0.2f, 1.0f, 0.2f,
+            -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,  0.2f, 1.0f, 0.2f,
+             0.5f,  0.5f,  0.5f,  1.0f, 0.0f,  0.2f, 1.0f, 0.2f,
+             0.5f,  0.5f, -0.5f,  1.0f, 1.0f,  0.2f, 1.0f, 0.2f,
+            -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,  0.2f, 1.0f, 0.2f,
             // Bottom (y-) — magenta
-            -0.5f, -0.5f, -0.5f,  1.0f, 0.2f, 1.0f,
-             0.5f, -0.5f, -0.5f,  1.0f, 0.2f, 1.0f,
-             0.5f, -0.5f,  0.5f,  1.0f, 0.2f, 1.0f,
-            -0.5f, -0.5f,  0.5f,  1.0f, 0.2f, 1.0f,
+            -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,  1.0f, 0.2f, 1.0f,
+             0.5f, -0.5f, -0.5f,  1.0f, 0.0f,  1.0f, 0.2f, 1.0f,
+             0.5f, -0.5f,  0.5f,  1.0f, 1.0f,  1.0f, 0.2f, 1.0f,
+            -0.5f, -0.5f,  0.5f,  0.0f, 1.0f,  1.0f, 0.2f, 1.0f,
             // Right (x+) — blue
-             0.5f, -0.5f,  0.5f,  0.2f, 0.2f, 1.0f,
-             0.5f, -0.5f, -0.5f,  0.2f, 0.2f, 1.0f,
-             0.5f,  0.5f, -0.5f,  0.2f, 0.2f, 1.0f,
-             0.5f,  0.5f,  0.5f,  0.2f, 0.2f, 1.0f,
+             0.5f, -0.5f,  0.5f,  0.0f, 0.0f,  0.2f, 0.2f, 1.0f,
+             0.5f, -0.5f, -0.5f,  1.0f, 0.0f,  0.2f, 0.2f, 1.0f,
+             0.5f,  0.5f, -0.5f,  1.0f, 1.0f,  0.2f, 0.2f, 1.0f,
+             0.5f,  0.5f,  0.5f,  0.0f, 1.0f,  0.2f, 0.2f, 1.0f,
             // Left (x-) — yellow
-            -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 0.2f,
-            -0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 0.2f,
-            -0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 0.2f,
-            -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 0.2f,
+            -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,  1.0f, 1.0f, 0.2f,
+            -0.5f, -0.5f,  0.5f,  1.0f, 0.0f,  1.0f, 1.0f, 0.2f,
+            -0.5f,  0.5f,  0.5f,  1.0f, 1.0f,  1.0f, 1.0f, 0.2f,
+            -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,  1.0f, 1.0f, 0.2f,
         };
     }
 

@@ -7,6 +7,7 @@ import org.example.ecs.Entity;
 import org.example.ecs.GameSystem;
 import org.example.ecs.World;
 import org.example.render.Mesh;
+import org.example.render.TextureAtlas;
 import org.example.world.BlockType;
 import org.example.world.WorldConstants;
 
@@ -37,7 +38,19 @@ public final class ChunkMeshingSystem implements GameSystem, AutoCloseable {
     };
 
     private static final int FACE_TOP          = 2;
-    private static final int FLOATS_PER_VERTEX = 6;
+    private static final int FACE_BOTTOM       = 3;
+    private static final int FLOATS_PER_VERTEX = 8; // pos(3) + uv(2) + tint(3)
+
+    // Per-vertex UV corner picks, matching the CCW vertex order in FACE_OFFSETS
+    // (v0 bottom-left, v1 bottom-right, v2 top-right, v3 top-left). With a non-flipped,
+    // top-left-origin atlas, the geometric bottom maps to the larger v (v1 of the tile rect).
+    private static final int UV_U0 = 0, UV_V0 = 1, UV_U1 = 2, UV_V1 = 3;
+    private static final int[] FACE_UV_CORNER = {
+        UV_U0, UV_V1,   // v0 bottom-left
+        UV_U1, UV_V1,   // v1 bottom-right
+        UV_U1, UV_V0,   // v2 top-right
+        UV_U0, UV_V0,   // v3 top-left
+    };
 
     private final List<Mesh> generatedMeshes = new ArrayList<>();
 
@@ -78,7 +91,8 @@ public final class ChunkMeshingSystem implements GameSystem, AutoCloseable {
             int ny = y + FACE_NEIGHBOR[face][1];
             int nz = z + FACE_NEIGHBOR[face][2];
             if (isAirOrOutOfBounds(data, nx, ny, nz)) {
-                builder.addFace(x, y, z, face, blockFaceColor(block, face));
+                BlockType type = BlockType.byId(block);
+                builder.addFace(x, y, z, face, blockFaceUv(type, face), type.tint());
             }
         }
     }
@@ -89,9 +103,13 @@ public final class ChunkMeshingSystem implements GameSystem, AutoCloseable {
         return data.get(x, y, z) == WorldConstants.BLOCK_AIR;
     }
 
-    private static float[] blockFaceColor(byte block, int face) {
-        BlockType type = BlockType.byId(block);
-        return (face == FACE_TOP) ? type.colorTop() : type.colorSide();
+    private static float[] blockFaceUv(BlockType type, int face) {
+        int tile = switch (face) {
+            case FACE_TOP    -> type.tileTop();
+            case FACE_BOTTOM -> type.tileBottom();
+            default          -> type.tileSide();
+        };
+        return TextureAtlas.uvForTile(tile);
     }
 
     @Override
@@ -115,7 +133,7 @@ public final class ChunkMeshingSystem implements GameSystem, AutoCloseable {
         private int vOffset = 0;
         private int iOffset = 0;
 
-        void addFace(int bx, int by, int bz, int face, float[] color) {
+        void addFace(int bx, int by, int bz, int face, float[] uv, float[] tint) {
             ensureCapacity();
             float[] off = FACE_OFFSETS[face];
             int baseVertex = vOffset / FLOATS_PER_VERTEX;
@@ -123,9 +141,11 @@ public final class ChunkMeshingSystem implements GameSystem, AutoCloseable {
                 vertices[vOffset++] = bx + off[v * 3];
                 vertices[vOffset++] = by + off[v * 3 + 1];
                 vertices[vOffset++] = bz + off[v * 3 + 2];
-                vertices[vOffset++] = color[0];
-                vertices[vOffset++] = color[1];
-                vertices[vOffset++] = color[2];
+                vertices[vOffset++] = uv[FACE_UV_CORNER[v * 2]];
+                vertices[vOffset++] = uv[FACE_UV_CORNER[v * 2 + 1]];
+                vertices[vOffset++] = tint[0];
+                vertices[vOffset++] = tint[1];
+                vertices[vOffset++] = tint[2];
             }
             indices[iOffset++] = baseVertex;
             indices[iOffset++] = baseVertex + 1;
