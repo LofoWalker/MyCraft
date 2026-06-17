@@ -183,36 +183,36 @@ Réalisé :
 
 ---
 
-## Milestone A — Boucle d'interaction complète
+## Milestone A — Boucle d'interaction complète ✅ LIVRÉ (steps 13-18)
 *Rendre le monde « jouable » : poser, viser, ramasser, et vrai terrain.*
 
-### Step 13 — Réactiver la vraie génération
+### Step 13 — ✅ Réactiver la vraie génération
 - Retirer/condition­ner `FlatTerrainStage`, rebrancher le pipeline complet dans `WorldGenSystem`.
 - Vérifier collisions/streaming sur terrain accidenté (montagnes, eau, grottes).
 - ✅ *Critère : spawn sur terrain ondulé avec arbres/minerais, pas de blocage de chunk.*
 
-### Step 14 — Surbrillance du bloc visé
+### Step 14 — ✅ Surbrillance du bloc visé
 - Nouveau `BlockHighlightSystem` (rendu) : wireframe sur la cible du raycast (réutiliser le ray de
   `BlockInteractionSystem` — extraire le raycast dans un util partagé `world/VoxelRaycast`).
 - ✅ *Critère : un contour suit le bloc regardé dans la portée.*
 
-### Step 15 — Poser des blocs
+### Step 15 — ✅ Poser des blocs
 - Étendre `PlayerInput` : `placeBlock` (clic droit). Calculer la **face** touchée (normale) dans le
   raycast → poser dans la cellule adjacente si vide et non en collision avec le joueur.
 - `ChunkDirty` sur le chunk modifié (remeshing déjà géré).
 - ✅ *Critère : clic droit pose le bloc courant sur la face visée ; pas de pose dans le joueur.*
 
-### Step 16 — Inventaire & hotbar (données)
+### Step 16 — ✅ Inventaire & hotbar (données)
 - Components : `Inventory(ItemStack[] slots)`, `Hotbar(int selectedSlot)`, `ItemStack(int itemId, int count)`.
 - Molette/touches 1-9 → slot sélectionné ; le bloc posé (Step 15) = item du slot actif.
 - ✅ *Critère (tests JUnit) : ajout/retrait/empilement d'items, sélection de slot.*
 
-### Step 17 — HUD 2D (overlay ortho)
+### Step 17 — ✅ HUD 2D (overlay ortho)
 - `HudSystem` : passe orthographique (crosshair, barre de hotbar, slot sélectionné).
 - Rendu de texte/icônes via un atlas bitmap (préfigure le Milestone B).
 - ✅ *Critère : crosshair centré + hotbar visible reflétant l'inventaire.*
 
-### Step 18 — Drops d'items & ramassage
+### Step 18 — ✅ Drops d'items & ramassage
 - Casser un bloc spawn une **entité item** (`ItemEntity`, `Position`, `Velocity`, `ItemStack`,
   collider réduit) ; physique réutilisée.
 - `ItemPickupSystem` : aimantation + collecte dans l'`Inventory` quand le joueur s'approche.
@@ -220,46 +220,46 @@ Réalisé :
 
 ---
 
-## Milestone B — Rendu fidèle (textures + lumière)
+## Milestone B — Rendu fidèle (textures + lumière) ✅ LIVRÉ (steps 19-22)
 *Le plus gros saut visuel.*
 
-### Step 19 — Atlas de textures
+### Step 19 — ✅ Atlas de textures
 - `render/TextureAtlas` (chargement PNG via `stb_image`), UV par face dans `BlockType`
   (top/side/bottom). Adapter le format de vertex du meshing (ajout UV) et le shader.
 - ✅ *Critère : blocs texturés (herbe/terre/pierre/bois…), 1 seul texture bind.*
 
-### Step 20 — Eau & transparence
+### Step 20 — ✅ Eau & transparence
 - Pass translucide séparé (blend, depth-write off, tri arrière→avant par chunk), faces d'eau
   non cullées entre elles ; surface légèrement abaissée.
 - ✅ *Critère : eau semi-transparente correcte, pas de z-fighting.*
 
-### Step 21 — Moteur de lumière (skylight + blocklight)
+### Step 21 — ✅ Moteur de lumière (skylight + blocklight)
 - Champ de lumière par chunk (`byte[]`, 4 bits sky + 4 bits block), propagation **flood-fill BFS**
   recalculée à la modification de bloc, sur virtual threads comme le meshing.
 - Le meshing écrit un niveau de lumière par face → assombrissement dans le shader.
 - Source de bloc : torche (nouveau `BlockType`, light=14).
 - ✅ *Critère : grottes sombres, torches éclairent un rayon, faces orientées différemment ombrées.*
 
-### Step 22 — Ambient occlusion (smooth lighting)
+### Step 22 — ✅ Ambient occlusion (smooth lighting)
 - AO par sommet (coins de voxels) calculée au meshing → rendu « smooth lighting » beta.
 - ✅ *Critère : coins/recoins légèrement assombris, aspect beta.*
 
 ---
 
-## Milestone C — Survie (cycle, vie, faim)
+## Milestone C — Survie (cycle, vie, faim) ✅ LIVRÉ (steps 23-25)
 
-### Step 23 — Cycle jour/nuit
+### Step 23 — ✅ Cycle jour/nuit
 - `TimeOfDay` (composant ou singleton world) ; `SkySystem` pilote la direction du soleil + couleurs ;
   niveau de skylight global dérivé de l'heure.
 - ✅ *Critère : soleil/lune se déplacent, le monde s'assombrit la nuit.*
 
-### Step 24 — Vie & dégâts
+### Step 24 — ✅ Vie & dégâts
 - `Health(int current, int max)` ; dégâts de **chute** (depuis la vélocité d'impact), **noyade**
   (tête sous l'eau > délai), lave. Régénération si conditions (faim pleine, étape 25).
 - Mort → écran/respawn au point de spawn.
 - ✅ *Critère : grosse chute blesse, rester sous l'eau noie, la mort respawn.*
 
-### Step 25 — Faim & nourriture (beta 1.8)
+### Step 25 — ✅ Faim & nourriture (beta 1.8)
 - `Hunger(int food, float saturation)` ; se vide à l'effort, régule la régen, affame à 0.
 - Items consommables (pomme/viande) qui restaurent la faim.
 - HUD : barres cœurs + nourriture.

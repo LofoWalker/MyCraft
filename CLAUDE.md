@@ -57,11 +57,26 @@ InputSystem → PhysicsSystem → CollisionSystem → MovementSystem
 | 10 | Collision AABB vs voxels | ✅ Done |
 | 11 | Chunks dynamiques (streaming + virtual threads) | ✅ Done |
 | 12 | Polish & perfs (frustum culling, zéro alloc rendu) | ✅ Done |
+| 13 | Réactiver la vraie génération de terrain + spawn sûr | ✅ Done |
+| 14 | Surbrillance du bloc visé + raycast partagé | ✅ Done |
+| 15 | Poser des blocs (clic droit, anti-collision) | ✅ Done |
+| 16 | Inventaire & hotbar (données) | ✅ Done |
+| 17 | HUD 2D (crosshair + hotbar) | ✅ Done |
+| 18 | Drops d'items & ramassage | ✅ Done |
+| 19 | Atlas de textures | ✅ Done |
+| 20 | Eau & transparence | ✅ Done |
+| 21 | Moteur de lumière (skylight + blocklight) | ✅ Done |
+| 22 | Ambient occlusion (smooth lighting) | ✅ Done |
+| 23 | Cycle jour/nuit | ✅ Done |
+| 24 | Vie & dégâts (chute/noyade, respawn) | ✅ Done |
+| 25 | Faim & nourriture | ✅ Done |
+| 26-37 | Items/craft, mobs, fluides, biomes, save, audio, menus | ⏳ À venir |
 
 ### Phase 2 (vers la beta) — Steps 13 à 37
 Détaillée dans `ROADMAP.md` (milestones A→G). **Tous les tickets de la phase 2 sont rédigés** dans
 `tickets/` (un fichier `TICKET-N-*.md` par step, prêts pour un agent en autonomie) — voir
-`tickets/README.md` pour l'index et le mode d'emploi. Steps 13-18 (interaction) en cours ; 19-37 à venir.
+`tickets/README.md` pour l'index et le mode d'emploi. **Milestones A, B et C livrés (steps 13-25)** ;
+steps 26-37 (items/craft, mobs, simulation, persistance, audio, menus) à venir.
 
 ## Conventions clean code
 - **Noms expressifs** — pas d'abréviations sauf conventions établies (`dt`, `dx`, `ebo`).
