@@ -58,6 +58,17 @@ public final class WorldConstants {
     public static final int   WATER_LEVEL = 40;
     public static final int   ROCK_LEVEL  = 96;
 
+    // Water rendering (STEP-20). The top face of a water cell sits this fraction of a block below
+    // the cell ceiling, so the surface reads as a slightly sunken sheet (beta look) and never
+    // z-fights the solid block beside it. The other water faces stay full-height.
+    public static final float WATER_SURFACE_DROP = 0.1f;
+    // Translucent water blend: alpha lets the sea floor show through; the tint cools the texel
+    // toward blue. Multiplied against the sampled water atlas tile in the water fragment shader.
+    public static final float WATER_ALPHA  = 0.6f;
+    public static final float WATER_TINT_R = 0.30f;
+    public static final float WATER_TINT_G = 0.55f;
+    public static final float WATER_TINT_B = 0.95f;
+
     // Rivers: a ridge of low-frequency noise (|noise| near zero) carves a winding channel
     // down to RIVER_BED_DEPTH below sea level. Only terrain up to RIVER_MAX_ELEVATION is
     // eligible, so rivers stay in the lowlands and never gouge canyons through mountains.

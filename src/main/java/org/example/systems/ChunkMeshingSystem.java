@@ -41,6 +41,10 @@ public final class ChunkMeshingSystem implements GameSystem, AutoCloseable {
     private static final int FACE_BOTTOM       = 3;
     private static final int FLOATS_PER_VERTEX = 8; // pos(3) + uv(2) + tint(3)
 
+    // Solid blocks fill their cell to the ceiling; water's top edge is lowered (beta surface).
+    private static final float FULL_TOP  = 1.0f;
+    private static final float WATER_TOP = 1.0f - WorldConstants.WATER_SURFACE_DROP;
+
     // Per-vertex UV corner picks, matching the CCW vertex order in FACE_OFFSETS
     // (v0 bottom-left, v1 bottom-right, v2 top-right, v3 top-left). With a non-flipped,
     // top-left-origin atlas, the geometric bottom maps to the larger v (v1 of the tile rect).
@@ -60,29 +64,37 @@ public final class ChunkMeshingSystem implements GameSystem, AutoCloseable {
             Entity entity = new Entity(eid);
             if (world.has(entity, ChunkMeshComponent.class)) continue;
             VoxelChunkData data = world.get(entity, VoxelChunkData.class).orElseThrow();
-            Mesh mesh = buildMesh(data);
-            generatedMeshes.add(mesh);
-            world.add(entity, new ChunkMeshComponent(mesh));
+            world.add(entity, buildMeshes(data));
         }
     }
 
-    private static Mesh buildMesh(VoxelChunkData data) {
-        Geometry geo = buildGeometry(data);
-        return Mesh.create(geo.vertices(), geo.indices());
+    private ChunkMeshComponent buildMeshes(VoxelChunkData data) {
+        ChunkGeometry geo = buildGeometry(data);
+        Mesh opaque = Mesh.create(geo.opaque().vertices(), geo.opaque().indices());
+        generatedMeshes.add(opaque);
+        Mesh water = null;
+        if (!geo.water().isEmpty()) {
+            water = Mesh.create(geo.water().vertices(), geo.water().indices());
+            generatedMeshes.add(water);
+        }
+        return ChunkMeshComponent.of(opaque, water);
     }
 
-    // Package-private: pure data transform — testable without GL context
-    static Geometry buildGeometry(VoxelChunkData data) {
+    // Package-private: pure data transform — testable without GL context. Produces opaque solid
+    // geometry and translucent water geometry separately so water can be drawn in its own pass.
+    static ChunkGeometry buildGeometry(VoxelChunkData data) {
         int SX = WorldConstants.CHUNK_SIZE_XZ;
         int H  = WorldConstants.WORLD_HEIGHT;
-        MeshBuilder builder = new MeshBuilder();
+        MeshBuilder opaque = new MeshBuilder();
+        MeshBuilder water  = new MeshBuilder();
         for (int y = 0; y < H; y++)
             for (int z = 0; z < SX; z++)
                 for (int x = 0; x < SX; x++) {
                     byte block = data.get(x, y, z);
-                    if (block != WorldConstants.BLOCK_AIR) appendVisibleFaces(builder, data, x, y, z, block);
+                    if (block == WorldConstants.BLOCK_WATER) appendWaterFaces(water, data, x, y, z);
+                    else if (block != WorldConstants.BLOCK_AIR) appendVisibleFaces(opaque, data, x, y, z, block);
                 }
-        return builder.toGeometry();
+        return new ChunkGeometry(opaque.toGeometry(), water.toGeometry());
     }
 
     private static void appendVisibleFaces(MeshBuilder builder, VoxelChunkData data, int x, int y, int z, byte block) {
@@ -92,7 +104,22 @@ public final class ChunkMeshingSystem implements GameSystem, AutoCloseable {
             int nz = z + FACE_NEIGHBOR[face][2];
             if (isAirOrOutOfBounds(data, nx, ny, nz)) {
                 BlockType type = BlockType.byId(block);
-                builder.addFace(x, y, z, face, blockFaceUv(type, face), type.tint());
+                builder.addFace(x, y, z, face, blockFaceUv(type, face), type.tint(), FULL_TOP);
+            }
+        }
+    }
+
+    // A water face is emitted only when its neighbour is NOT water (no faces between two water
+    // cells); the water surface is lowered to WATER_TOP so it reads as a sunken sheet.
+    private static void appendWaterFaces(MeshBuilder builder, VoxelChunkData data, int x, int y, int z) {
+        float[] uv = TextureAtlas.uvForTile(BlockType.WATER.tileTop());
+        float[] tint = BlockType.WATER.tint();
+        for (int face = 0; face < 6; face++) {
+            int nx = x + FACE_NEIGHBOR[face][0];
+            int ny = y + FACE_NEIGHBOR[face][1];
+            int nz = z + FACE_NEIGHBOR[face][2];
+            if (!isWater(data, nx, ny, nz)) {
+                builder.addFace(x, y, z, face, uv, tint, WATER_TOP);
             }
         }
     }
@@ -101,6 +128,12 @@ public final class ChunkMeshingSystem implements GameSystem, AutoCloseable {
         int SX = WorldConstants.CHUNK_SIZE_XZ;
         if (x < 0 || x >= SX || y < 0 || y >= WorldConstants.WORLD_HEIGHT || z < 0 || z >= SX) return true;
         return data.get(x, y, z) == WorldConstants.BLOCK_AIR;
+    }
+
+    private static boolean isWater(VoxelChunkData data, int x, int y, int z) {
+        int SX = WorldConstants.CHUNK_SIZE_XZ;
+        if (x < 0 || x >= SX || y < 0 || y >= WorldConstants.WORLD_HEIGHT || z < 0 || z >= SX) return false;
+        return data.get(x, y, z) == WorldConstants.BLOCK_WATER;
     }
 
     private static float[] blockFaceUv(BlockType type, int face) {
@@ -118,7 +151,11 @@ public final class ChunkMeshingSystem implements GameSystem, AutoCloseable {
         generatedMeshes.clear();
     }
 
-    record Geometry(float[] vertices, int[] indices) {}
+    record Geometry(float[] vertices, int[] indices) {
+        boolean isEmpty() { return indices.length == 0; }
+    }
+
+    record ChunkGeometry(Geometry opaque, Geometry water) {}
 
     private static final class MeshBuilder {
         // A full chunk floor exposes at least 32×32 top faces; start there and grow by
@@ -127,19 +164,23 @@ public final class ChunkMeshingSystem implements GameSystem, AutoCloseable {
         private static final int INITIAL_FACES   = WorldConstants.CHUNK_SIZE_XZ * WorldConstants.CHUNK_SIZE_XZ;
         private static final int FLOATS_PER_FACE = 4 * FLOATS_PER_VERTEX;
         private static final int INTS_PER_FACE   = 6;
+        private static final float TOP_Y_OFFSET  = 1.0f;
 
         private float[] vertices = new float[INITIAL_FACES * FLOATS_PER_FACE];
         private int[]   indices  = new int[INITIAL_FACES * INTS_PER_FACE];
         private int vOffset = 0;
         private int iOffset = 0;
 
-        void addFace(int bx, int by, int bz, int face, float[] uv, float[] tint) {
+        // topY replaces the y=1 vertices' height so water can sit below the cell ceiling; solid
+        // blocks pass topY = 1.0 and are unaffected.
+        void addFace(int bx, int by, int bz, int face, float[] uv, float[] tint, float topY) {
             ensureCapacity();
             float[] off = FACE_OFFSETS[face];
             int baseVertex = vOffset / FLOATS_PER_VERTEX;
             for (int v = 0; v < 4; v++) {
+                float yOff = off[v * 3 + 1];
                 vertices[vOffset++] = bx + off[v * 3];
-                vertices[vOffset++] = by + off[v * 3 + 1];
+                vertices[vOffset++] = by + (yOff == TOP_Y_OFFSET ? topY : yOff);
                 vertices[vOffset++] = bz + off[v * 3 + 2];
                 vertices[vOffset++] = uv[FACE_UV_CORNER[v * 2]];
                 vertices[vOffset++] = uv[FACE_UV_CORNER[v * 2 + 1]];

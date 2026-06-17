@@ -48,6 +48,7 @@ public class Main {
         window.captureCursor();
 
         try (Shader shader = Shader.fromResources("/shaders/basic.vert", "/shaders/basic.frag");
+             Shader waterShader = Shader.fromResources("/shaders/water.vert", "/shaders/water.frag");
              TextureAtlas atlas = TextureAtlas.loadFromClasspath("/textures/blocks.png");
              ChunkStreamingSystem chunkStreaming = new ChunkStreamingSystem(seed);
              SkySystem sky = new SkySystem();
@@ -69,7 +70,7 @@ public class Main {
             renderScheduler.add(new CameraSystem(window.getAspectRatio()));
             renderScheduler.add(sky);
             renderScheduler.add(chunkStreaming);
-            renderScheduler.add(new RenderSystem(shader, atlas));
+            renderScheduler.add(new RenderSystem(shader, waterShader, atlas));
             renderScheduler.add(blockHighlight);
             renderScheduler.add(breakOverlay);
             renderScheduler.add(itemRender);

@@ -10,7 +10,7 @@ import org.example.ecs.Entity;
 import org.example.ecs.GameSystem;
 import org.example.ecs.World;
 import org.example.render.Mesh;
-import org.example.systems.ChunkMeshingSystem.Geometry;
+import org.example.systems.ChunkMeshingSystem.ChunkGeometry;
 import org.example.world.WorldConstants;
 import org.example.worldgen.GenerationPipeline;
 
@@ -24,15 +24,16 @@ import java.util.concurrent.Executors;
 
 public final class ChunkStreamingSystem implements GameSystem, AutoCloseable {
 
-    private record ChunkResult(long key, int entityId, VoxelChunkData data, Geometry geometry) {}
+    private record ChunkResult(long key, int entityId, VoxelChunkData data, ChunkGeometry geometry) {}
 
     private final GenerationPipeline generation;
     private final ExecutorService workers = Executors.newVirtualThreadPerTaskExecutor();
     private final ConcurrentLinkedQueue<ChunkResult> ready = new ConcurrentLinkedQueue<>();
 
     // Authoritative registry of streamed chunks; only mutated on the main thread.
-    private final Map<Long, Integer> loadedEntities = new HashMap<>();
-    private final Map<Integer, Mesh> meshes         = new HashMap<>();
+    private final Map<Long, Integer> loadedEntities  = new HashMap<>();
+    private final Map<Integer, Mesh> opaqueMeshes     = new HashMap<>();
+    private final Map<Integer, Mesh> waterMeshes       = new HashMap<>();
 
     public ChunkStreamingSystem(long seed) {
         this.generation = GenerationPipeline.overworld(seed);
@@ -54,14 +55,31 @@ public final class ChunkStreamingSystem implements GameSystem, AutoCloseable {
         for (int eid : world.query(ChunkDirty.class, VoxelChunkData.class)) {
             Entity entity = new Entity(eid);
             VoxelChunkData data = world.get(entity, VoxelChunkData.class).orElseThrow();
-            Geometry geometry = ChunkMeshingSystem.buildGeometry(data);
-            Mesh oldMesh = meshes.remove(eid);
-            if (oldMesh != null) oldMesh.close();
-            Mesh mesh = Mesh.create(geometry.vertices(), geometry.indices());
-            meshes.put(eid, mesh);
-            world.add(entity, new ChunkMeshComponent(mesh));
+            ChunkGeometry geometry = ChunkMeshingSystem.buildGeometry(data);
+            closeMeshes(eid);
+            uploadMeshes(world, entity, geometry);
             world.remove(entity, ChunkDirty.class);
         }
+    }
+
+    // Uploads opaque + (optional) water geometry to GL and registers both for lifecycle cleanup.
+    private void uploadMeshes(World world, Entity entity, ChunkGeometry geometry) {
+        int eid = entity.id();
+        Mesh opaque = Mesh.create(geometry.opaque().vertices(), geometry.opaque().indices());
+        opaqueMeshes.put(eid, opaque);
+        Mesh water = null;
+        if (geometry.water().indices().length > 0) {
+            water = Mesh.create(geometry.water().vertices(), geometry.water().indices());
+            waterMeshes.put(eid, water);
+        }
+        world.add(entity, ChunkMeshComponent.of(opaque, water));
+    }
+
+    private void closeMeshes(int entityId) {
+        Mesh opaque = opaqueMeshes.remove(entityId);
+        if (opaque != null) opaque.close();
+        Mesh water = waterMeshes.remove(entityId);
+        if (water != null) water.close();
     }
 
     private Optional<int[]> playerChunk(World world) {
@@ -97,7 +115,7 @@ public final class ChunkStreamingSystem implements GameSystem, AutoCloseable {
         workers.submit(() -> {
             VoxelChunkData data = VoxelChunkData.empty();
             generation.generate(data, cx, cz);
-            Geometry geometry = ChunkMeshingSystem.buildGeometry(data);
+            ChunkGeometry geometry = ChunkMeshingSystem.buildGeometry(data);
             ready.add(new ChunkResult(key, entityId, data, geometry));
         });
     }
@@ -115,8 +133,7 @@ public final class ChunkStreamingSystem implements GameSystem, AutoCloseable {
     }
 
     private void unloadChunk(World world, int entityId) {
-        Mesh mesh = meshes.remove(entityId);
-        if (mesh != null) mesh.close();
+        closeMeshes(entityId);
         world.destroy(new Entity(entityId));
     }
 
@@ -141,16 +158,16 @@ public final class ChunkStreamingSystem implements GameSystem, AutoCloseable {
     private void applyChunk(World world, ChunkResult result) {
         Entity entity = new Entity(result.entityId());
         world.add(entity, result.data());
-        Mesh mesh = Mesh.create(result.geometry().vertices(), result.geometry().indices());
-        meshes.put(result.entityId(), mesh);
-        world.add(entity, new ChunkMeshComponent(mesh));
+        uploadMeshes(world, entity, result.geometry());
     }
 
     @Override
     public void close() {
         workers.shutdownNow();
-        meshes.values().forEach(Mesh::close);
-        meshes.clear();
+        opaqueMeshes.values().forEach(Mesh::close);
+        waterMeshes.values().forEach(Mesh::close);
+        opaqueMeshes.clear();
+        waterMeshes.clear();
         loadedEntities.clear();
     }
 

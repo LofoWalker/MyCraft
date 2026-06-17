@@ -23,7 +23,7 @@ class ChunkMeshingSystemTest {
 
     @Test
     void emptyChunkProducesNoGeometry() {
-        ChunkMeshingSystem.Geometry geo = ChunkMeshingSystem.buildGeometry(VoxelChunkData.empty());
+        ChunkMeshingSystem.Geometry geo = ChunkMeshingSystem.buildGeometry(VoxelChunkData.empty()).opaque();
         assertEquals(0, geo.vertices().length);
         assertEquals(0, geo.indices().length);
     }
@@ -33,7 +33,7 @@ class ChunkMeshingSystemTest {
         VoxelChunkData data = VoxelChunkData.empty();
         data.set(0, 0, 0, WorldConstants.BLOCK_STONE);
 
-        ChunkMeshingSystem.Geometry geo = ChunkMeshingSystem.buildGeometry(data);
+        ChunkMeshingSystem.Geometry geo = ChunkMeshingSystem.buildGeometry(data).opaque();
 
         assertEquals(FACES_PER_BLOCK * VERTICES_PER_FACE * FLOATS_PER_VERTEX, geo.vertices().length);
         assertEquals(FACES_PER_BLOCK * INDICES_PER_FACE, geo.indices().length);
@@ -45,7 +45,7 @@ class ChunkMeshingSystemTest {
         data.set(0, 0, 0, WorldConstants.BLOCK_STONE);
         data.set(1, 0, 0, WorldConstants.BLOCK_DIRT);
 
-        ChunkMeshingSystem.Geometry geo = ChunkMeshingSystem.buildGeometry(data);
+        ChunkMeshingSystem.Geometry geo = ChunkMeshingSystem.buildGeometry(data).opaque();
 
         // 2 blocks × 6 faces − 2 shared internal faces = 10 visible faces
         int expectedFaces = 2 * FACES_PER_BLOCK - 2;
@@ -65,7 +65,7 @@ class ChunkMeshingSystemTest {
         data.set(1, 1, 2, WorldConstants.BLOCK_STONE); // z+
         data.set(1, 1, 0, WorldConstants.BLOCK_STONE); // z-
 
-        ChunkMeshingSystem.Geometry geo = ChunkMeshingSystem.buildGeometry(data);
+        ChunkMeshingSystem.Geometry geo = ChunkMeshingSystem.buildGeometry(data).opaque();
 
         // The centre block contributes 0 faces; each neighbour exposes 5 outer faces
         int centreFaceCount = 0;
@@ -82,7 +82,7 @@ class ChunkMeshingSystemTest {
         data.set(1, 0, 0, WorldConstants.BLOCK_DIRT);
         data.set(2, 0, 0, WorldConstants.BLOCK_STONE);
 
-        float[] vertices = ChunkMeshingSystem.buildGeometry(data).vertices();
+        float[] vertices = ChunkMeshingSystem.buildGeometry(data).opaque().vertices();
         for (int i = TINT_OFFSET; i < vertices.length; i += FLOATS_PER_VERTEX) {
             float r = vertices[i], g = vertices[i + 1], b = vertices[i + 2];
             assertTrue(r >= 0f && r <= 1f, "Red out of [0,1]: " + r);
@@ -96,7 +96,7 @@ class ChunkMeshingSystemTest {
         VoxelChunkData data = VoxelChunkData.empty();
         data.set(0, 0, 0, WorldConstants.BLOCK_GRASS);
 
-        float[] v = ChunkMeshingSystem.buildGeometry(data).vertices();
+        float[] v = ChunkMeshingSystem.buildGeometry(data).opaque().vertices();
         for (int i = UV_OFFSET; i < v.length; i += FLOATS_PER_VERTEX) {
             float u = v[i], uv = v[i + 1];
             assertTrue(u >= 0f && u <= 1f, "U out of [0,1]: " + u);
@@ -110,7 +110,7 @@ class ChunkMeshingSystemTest {
         int maxIdx = WorldConstants.CHUNK_SIZE_XZ - 1;
         data.set(maxIdx, 0, 0, WorldConstants.BLOCK_STONE);
 
-        ChunkMeshingSystem.Geometry geo = ChunkMeshingSystem.buildGeometry(data);
+        ChunkMeshingSystem.Geometry geo = ChunkMeshingSystem.buildGeometry(data).opaque();
 
         // Out-of-bounds neighbours count as air → all 6 faces visible
         assertEquals(FACES_PER_BLOCK * VERTICES_PER_FACE * FLOATS_PER_VERTEX, geo.vertices().length);
@@ -122,7 +122,7 @@ class ChunkMeshingSystemTest {
         VoxelChunkData data = VoxelChunkData.empty();
         data.set(0, 0, 0, WorldConstants.BLOCK_GRASS);
 
-        float[] v = ChunkMeshingSystem.buildGeometry(data).vertices();
+        float[] v = ChunkMeshingSystem.buildGeometry(data).opaque().vertices();
 
         assertArrayEquals(TextureAtlas.uvForTile(BlockType.GRASS.tileTop()),
                 faceUvRect(v, FACE_TOP), 1e-6f, "Top face must carry grass top tile UVs");
@@ -135,7 +135,7 @@ class ChunkMeshingSystemTest {
         VoxelChunkData data = VoxelChunkData.empty();
         data.set(0, 0, 0, (byte) 99);
 
-        float[] v = ChunkMeshingSystem.buildGeometry(data).vertices();
+        float[] v = ChunkMeshingSystem.buildGeometry(data).opaque().vertices();
 
         assertEquals(1.0f, v[TINT_OFFSET],     1e-6f, "Expected tint R=1.0 for unknown block");
         assertEquals(0.0f, v[TINT_OFFSET + 1], 1e-6f, "Expected tint G=0.0 for unknown block");
@@ -163,7 +163,7 @@ class ChunkMeshingSystemTest {
         int bx = 5, by = 3, bz = 7;
         data.set(bx, by, bz, WorldConstants.BLOCK_STONE);
 
-        float[] v = ChunkMeshingSystem.buildGeometry(data).vertices();
+        float[] v = ChunkMeshingSystem.buildGeometry(data).opaque().vertices();
 
         float minX = Float.MAX_VALUE, maxX = -Float.MAX_VALUE;
         float minY = Float.MAX_VALUE, maxY = -Float.MAX_VALUE;
@@ -186,11 +186,70 @@ class ChunkMeshingSystemTest {
         VoxelChunkData data = VoxelChunkData.empty();
         data.set(3, 2, 1, WorldConstants.BLOCK_STONE);
 
-        ChunkMeshingSystem.Geometry geo = ChunkMeshingSystem.buildGeometry(data);
+        ChunkMeshingSystem.Geometry geo = ChunkMeshingSystem.buildGeometry(data).opaque();
         int vertexCount = geo.vertices().length / FLOATS_PER_VERTEX;
         for (int idx : geo.indices()) {
             assertTrue(idx >= 0 && idx < vertexCount,
                     "Index " + idx + " out of vertex range [0, " + vertexCount + ")");
         }
+    }
+
+    // --- STEP-20: water geometry --------------------------------------------------------------
+
+    @Test
+    void waterCellGoesToWaterGeometryNotOpaque() {
+        VoxelChunkData data = VoxelChunkData.empty();
+        data.set(0, 0, 0, WorldConstants.BLOCK_WATER);
+
+        ChunkMeshingSystem.ChunkGeometry geo = ChunkMeshingSystem.buildGeometry(data);
+
+        assertEquals(0, geo.opaque().indices().length, "Water must not appear in opaque geometry");
+        // Isolated water cell: 6 exposed faces (all neighbours are air/out-of-bounds).
+        assertEquals(FACES_PER_BLOCK * INDICES_PER_FACE, geo.water().indices().length);
+    }
+
+    @Test
+    void adjacentWaterCellsEmitNoFaceBetweenThem() {
+        VoxelChunkData data = VoxelChunkData.empty();
+        data.set(0, 0, 0, WorldConstants.BLOCK_WATER);
+        data.set(1, 0, 0, WorldConstants.BLOCK_WATER);
+
+        ChunkMeshingSystem.Geometry water = ChunkMeshingSystem.buildGeometry(data).water();
+
+        // 2 water cells × 6 faces − 2 shared faces between them = 10 visible water faces.
+        int expectedFaces = 2 * FACES_PER_BLOCK - 2;
+        assertEquals(expectedFaces * INDICES_PER_FACE, water.indices().length);
+    }
+
+    @Test
+    void waterTopFaceIsGeneratedUnderAir() {
+        VoxelChunkData data = VoxelChunkData.empty();
+        // Column of two water cells: only the lower cell's top is shared with water (culled),
+        // the upper cell's top sits under air, so exactly one top face is exposed at its surface.
+        data.set(0, 0, 0, WorldConstants.BLOCK_WATER);
+        data.set(0, 1, 0, WorldConstants.BLOCK_WATER);
+
+        ChunkMeshingSystem.Geometry water = ChunkMeshingSystem.buildGeometry(data).water();
+        float maxY = -Float.MAX_VALUE;
+        for (int i = 1; i < water.vertices().length; i += FLOATS_PER_VERTEX) {
+            maxY = Math.max(maxY, water.vertices()[i]);
+        }
+
+        // The surface is lowered by WATER_SURFACE_DROP below the upper cell's ceiling (y=2).
+        float expectedSurfaceY = 2f - WorldConstants.WATER_SURFACE_DROP;
+        assertEquals(expectedSurfaceY, maxY, 1e-6f, "Water surface must be lowered under air");
+    }
+
+    @Test
+    void waterSubmergedUnderAnotherWaterCellHasNoTopFace() {
+        VoxelChunkData data = VoxelChunkData.empty();
+        data.set(0, 0, 0, WorldConstants.BLOCK_WATER); // bottom
+        data.set(0, 1, 0, WorldConstants.BLOCK_WATER); // covers bottom's top face
+
+        ChunkMeshingSystem.Geometry water = ChunkMeshingSystem.buildGeometry(data).water();
+
+        // 2 cells × 6 − 2 shared (between the stacked cells) = 10 faces.
+        int expectedFaces = 2 * FACES_PER_BLOCK - 2;
+        assertEquals(expectedFaces * INDICES_PER_FACE, water.indices().length);
     }
 }
