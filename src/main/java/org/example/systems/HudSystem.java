@@ -1,5 +1,6 @@
 package org.example.systems;
 
+import org.example.components.Health;
 import org.example.components.Hotbar;
 import org.example.components.Inventory;
 import org.example.components.ItemStack;
@@ -35,6 +36,8 @@ public final class HudSystem implements GameSystem, AutoCloseable {
     private static final float COUNT_PADDING   = 4f;
 
     private static final float[] CROSSHAIR_COLOR   = { 1f, 1f, 1f };
+    private static final float[] HEART_FULL_COLOR  = { 0.85f, 0.15f, 0.15f };
+    private static final float[] HEART_EMPTY_COLOR = { 0.20f, 0.20f, 0.20f };
     private static final float[] SLOT_COLOR        = { 0.10f, 0.10f, 0.10f };
     private static final float[] SELECTION_COLOR   = { 1f, 1f, 1f };
     private static final float[] COUNT_COLOR       = { 1f, 1f, 1f };
@@ -88,6 +91,7 @@ public final class HudSystem implements GameSystem, AutoCloseable {
 
         drawCrosshair(width, height);
         drawHotbar(world, width, height);
+        drawHealth(world, width, height);
 
         glBindVertexArray(0);
         shader.unbind();
@@ -109,6 +113,17 @@ public final class HudSystem implements GameSystem, AutoCloseable {
             }
             drawRect(HudLayout.slot(i, width, height), SLOT_COLOR, SLOT_ALPHA);
             drawSlotItem(inventory, i, width, height);
+        }
+    }
+
+    private void drawHealth(World world, int width, int height) {
+        Health health = playerHealth(world);
+        if (health == null) return;
+        int hearts = HudLayout.heartCount(health.max());
+        int full   = Math.max(health.current(), 0) / HudLayout.HEALTH_PER_HEART;
+        for (int i = 0; i < hearts; i++) {
+            float[] color = i < full ? HEART_FULL_COLOR : HEART_EMPTY_COLOR;
+            drawRect(HudLayout.heart(i, width, height), color, OPAQUE);
         }
     }
 
@@ -180,6 +195,12 @@ public final class HudSystem implements GameSystem, AutoCloseable {
         int[] players = world.query(Inventory.class);
         if (players.length == 0) return null;
         return world.get(new Entity(players[0]), Inventory.class).orElse(null);
+    }
+
+    private static Health playerHealth(World world) {
+        int[] players = world.query(Health.class);
+        if (players.length == 0) return null;
+        return world.get(new Entity(players[0]), Health.class).orElse(null);
     }
 
     private static int selectedSlot(World world) {

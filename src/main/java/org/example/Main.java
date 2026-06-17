@@ -33,8 +33,9 @@ public class Main {
         long seed = ThreadLocalRandom.current().nextLong();
         System.out.println("World seed: " + seed);
 
+        float spawnY = spawnHeight(seed);
         Entity player = world.create();
-        world.add(player, new Position(SPAWN_X, spawnHeight(seed), SPAWN_Z));
+        world.add(player, new Position(SPAWN_X, spawnY, SPAWN_Z));
         world.add(player, new Rotation(-30f, -20f));
         world.add(player, new Velocity(0f, 0f, 0f));
         world.add(player, new Gravity(WorldConstants.GRAVITY));
@@ -44,6 +45,11 @@ public class Main {
                 0, WorldConstants.NO_HOTBAR_SELECT));
         world.add(player, new Hotbar(0));
         world.add(player, startingInventory());
+        world.add(player, new Health(WorldConstants.MAX_HEALTH, WorldConstants.MAX_HEALTH));
+        world.add(player, new Breath(WorldConstants.BREATH_SECONDS));
+        world.add(player, new DamageImmunity(0f));
+        world.add(player, new DamageTimers(0f, 0f, 0f));
+        world.add(player, new SpawnPoint(SPAWN_X, spawnY, SPAWN_Z));
 
         Entity worldClock = world.create();
         world.add(worldClock, new TimeOfDay(0f));
@@ -68,6 +74,8 @@ public class Main {
             simScheduler.add(new PhysicsSystem());
             simScheduler.add(new MovementSystem());
             simScheduler.add(new ItemMotionSystem());
+            // Before CollisionSystem: it captures fall-impact Velocity.y before collision zeroes it.
+            simScheduler.add(new HealthSystem());
             simScheduler.add(new CollisionSystem());
             simScheduler.add(new ItemPickupSystem());
 

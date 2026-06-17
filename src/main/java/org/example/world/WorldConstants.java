@@ -144,4 +144,32 @@ public final class WorldConstants {
     // Fraction of the day spent in dawn=0 and noon=0.25 etc. is fixed by the sine of dayFraction;
     // these thresholds shape the global-light ramp between night and full day.
     public static final float DAY_LIGHT_HORIZON_MARGIN = 0.05f;
+
+    // Player health (STEP-24). Health is whole "hearts"; MAX_HEALTH is also the respawn amount.
+    public static final int   MAX_HEALTH = 20;
+
+    // Fall damage. Landing at or below SAFE_FALL_SPEED (positive m/s) is harmless; above it, damage
+    // grows linearly with the excess at FALL_DAMAGE_PER_SPEED points per m/s (see FallDamage). The
+    // threshold sits above a normal JUMP_IMPULSE landing so ordinary hops never hurt.
+    public static final float SAFE_FALL_SPEED       = 14.0f;
+    public static final float FALL_DAMAGE_PER_SPEED = 0.5f;
+
+    // Drowning. Submerged time builds up; once a full lungful (BREATH_SECONDS) is spent the player
+    // loses DROWN_DAMAGE every DROWN_INTERVAL seconds. Breath refills (faster than it drains) in air.
+    public static final float BREATH_SECONDS   = 10.0f;
+    public static final float DROWN_INTERVAL   = 1.0f;
+    public static final int   DROWN_DAMAGE     = 1;
+    public static final float BREATH_REFILL_RATE = 4.0f;
+
+    // I-frames granted by any damage event, so a single hit cannot drain health on back-to-back ticks.
+    public static final float DAMAGE_IMMUNITY_SECONDS = 0.5f;
+
+    // Slow passive regen: after this many seconds without taking damage, heal REGEN_AMOUNT every
+    // REGEN_INTERVAL seconds up to MAX_HEALTH.
+    public static final float REGEN_DELAY_SECONDS = 5.0f;
+    public static final float REGEN_INTERVAL      = 2.0f;
+    public static final int   REGEN_AMOUNT        = 1;
+
+    // TODO(STEP-24): lava contact damage + short i-frames once BLOCK_LAVA and its atlas tile exist.
+    // Out of scope here: no lava block/tile is added, so the HealthSystem only handles fall + drowning.
 }

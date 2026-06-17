@@ -24,6 +24,13 @@ public final class HudLayout {
     // The selected slot grows by this much on every side to read as "highlighted".
     public static final float SELECTION_GROW      = 4f;
 
+    // Health bar: a row of small square heart icons sitting just above the hotbar, left-aligned with
+    // the hotbar's left edge. One icon per two health points (full/half not distinguished here).
+    public static final float HEART_SIZE          = 18f;
+    public static final float HEART_GAP           = 4f;
+    public static final float HEART_BOTTOM_MARGIN = 8f;
+    public static final int   HEALTH_PER_HEART    = 2;
+
     private HudLayout() {}
 
     public record Rect(float x, float y, float w, float h) {
@@ -69,6 +76,20 @@ public final class HudLayout {
         Rect base = slot(index, screenWidth, screenHeight);
         return new Rect(base.x() + ITEM_INSET, base.y() + ITEM_INSET,
                 base.w() - 2 * ITEM_INSET, base.h() - 2 * ITEM_INSET);
+    }
+
+    /** Number of heart icons needed to display a max-health bar (rounded up). */
+    public static int heartCount(int maxHealth) {
+        return (maxHealth + HEALTH_PER_HEART - 1) / HEALTH_PER_HEART;
+    }
+
+    /** Top-left-anchored rectangle for the heart icon at {@code index}, above the hotbar. */
+    public static Rect heart(int index, int screenWidth, int screenHeight) {
+        float originX = (screenWidth - hotbarWidth()) * 0.5f;
+        float hotbarTop = screenHeight - HOTBAR_BOTTOM_MARGIN - SLOT_SIZE;
+        float y = hotbarTop - HEART_BOTTOM_MARGIN - HEART_SIZE;
+        float x = originX + index * (HEART_SIZE + HEART_GAP);
+        return new Rect(x, y, HEART_SIZE, HEART_SIZE);
     }
 
     private static Rect centered(float cx, float cy, float w, float h) {
