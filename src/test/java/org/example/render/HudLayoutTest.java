@@ -97,6 +97,31 @@ class HudLayoutTest {
     }
 
     @Test
+    void foodIconCountCoversMaxFood() {
+        assertEquals((WorldConstants.MAX_FOOD + 1) / HudLayout.FOOD_PER_ICON,
+                HudLayout.foodIconCount(WorldConstants.MAX_FOOD));
+    }
+
+    @Test
+    void foodBarAnchorsToHotbarRightEdgeAndGrowsLeftward() {
+        Rect first  = HudLayout.food(0, WIDTH, HEIGHT);
+        Rect second = HudLayout.food(1, WIDTH, HEIGHT);
+
+        float originX     = (WIDTH - HudLayout.hotbarWidth()) * 0.5f;
+        float hotbarRight = originX + HudLayout.hotbarWidth();
+        assertEquals(hotbarRight, first.x() + first.w(), EPS, "index 0 hugs the hotbar right edge");
+        assertTrue(second.x() < first.x(), "later icons sit to the left");
+    }
+
+    @Test
+    void foodAndHeartsShareARow() {
+        Rect heart = HudLayout.heart(0, WIDTH, HEIGHT);
+        Rect food  = HudLayout.food(0, WIDTH, HEIGHT);
+        assertEquals(heart.y(), food.y(), EPS, "food row aligns with the heart row");
+        assertTrue(food.x() > heart.x(), "food sits to the right of the hearts");
+    }
+
+    @Test
     void layoutRecentersAfterResize() {
         Rect wide = HudLayout.slot(0, 2560, 1440);
         Rect narrow = HudLayout.slot(0, 1280, 720);

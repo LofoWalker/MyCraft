@@ -31,6 +31,12 @@ public final class HudLayout {
     public static final float HEART_BOTTOM_MARGIN = 8f;
     public static final int   HEALTH_PER_HEART    = 2;
 
+    // Food bar: a row of food icons mirroring the hearts but anchored to the hotbar's RIGHT edge and
+    // filled right-to-left, so hearts (left) and food (right) sit on the same row above the hotbar.
+    public static final float FOOD_SIZE       = 18f;
+    public static final float FOOD_GAP        = 4f;
+    public static final int   FOOD_PER_ICON   = 2;
+
     private HudLayout() {}
 
     public record Rect(float x, float y, float w, float h) {
@@ -90,6 +96,25 @@ public final class HudLayout {
         float y = hotbarTop - HEART_BOTTOM_MARGIN - HEART_SIZE;
         float x = originX + index * (HEART_SIZE + HEART_GAP);
         return new Rect(x, y, HEART_SIZE, HEART_SIZE);
+    }
+
+    /** Number of food icons needed to display a max-food bar (rounded up). */
+    public static int foodIconCount(int maxFood) {
+        return (maxFood + FOOD_PER_ICON - 1) / FOOD_PER_ICON;
+    }
+
+    /**
+     * Top-left-anchored rectangle for the food icon at {@code index}, on the same row as the hearts but
+     * anchored to the hotbar's right edge and laid out right-to-left (index 0 is the rightmost icon),
+     * so the bar empties toward the centre as food runs out.
+     */
+    public static Rect food(int index, int screenWidth, int screenHeight) {
+        float originX     = (screenWidth - hotbarWidth()) * 0.5f;
+        float hotbarRight = originX + hotbarWidth();
+        float hotbarTop   = screenHeight - HOTBAR_BOTTOM_MARGIN - SLOT_SIZE;
+        float y = hotbarTop - HEART_BOTTOM_MARGIN - FOOD_SIZE;
+        float x = hotbarRight - FOOD_SIZE - index * (FOOD_SIZE + FOOD_GAP);
+        return new Rect(x, y, FOOD_SIZE, FOOD_SIZE);
     }
 
     private static Rect centered(float cx, float cy, float w, float h) {

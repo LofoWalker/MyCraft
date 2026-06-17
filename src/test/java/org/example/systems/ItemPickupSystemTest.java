@@ -117,7 +117,7 @@ class ItemPickupSystemTest {
         Entity player = world.create();
         world.add(player, new Position(0f, 60f, 0f));
         world.add(player, new PlayerInput(false, false, false, false, false, false, 0f, 0f, false, false,
-                0, WorldConstants.NO_HOTBAR_SELECT));
+                false, 0, WorldConstants.NO_HOTBAR_SELECT));
         world.add(player, inventory);
         return player;
     }

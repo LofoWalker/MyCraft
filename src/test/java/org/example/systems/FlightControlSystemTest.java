@@ -21,13 +21,13 @@ class FlightControlSystemTest {
         world  = new World();
         player = world.create();
         world.add(player, new PlayerInput(false, false, false, false, false, false, 0f, 0f, false, false,
-                0, WorldConstants.NO_HOTBAR_SELECT));
+                false, 0, WorldConstants.NO_HOTBAR_SELECT));
         system = new FlightControlSystem();
     }
 
     private void step(boolean jump, float dt) {
         world.add(player, new PlayerInput(false, false, false, false, jump, false, 0f, 0f, false, false,
-                0, WorldConstants.NO_HOTBAR_SELECT));
+                false, 0, WorldConstants.NO_HOTBAR_SELECT));
         system.update(world, dt);
     }
 

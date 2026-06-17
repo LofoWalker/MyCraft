@@ -2,6 +2,7 @@ package org.example.systems;
 
 import org.example.components.Health;
 import org.example.components.Hotbar;
+import org.example.components.Hunger;
 import org.example.components.Inventory;
 import org.example.components.ItemStack;
 import org.example.ecs.Entity;
@@ -38,6 +39,8 @@ public final class HudSystem implements GameSystem, AutoCloseable {
     private static final float[] CROSSHAIR_COLOR   = { 1f, 1f, 1f };
     private static final float[] HEART_FULL_COLOR  = { 0.85f, 0.15f, 0.15f };
     private static final float[] HEART_EMPTY_COLOR = { 0.20f, 0.20f, 0.20f };
+    private static final float[] FOOD_FULL_COLOR   = { 0.80f, 0.55f, 0.20f };
+    private static final float[] FOOD_EMPTY_COLOR  = { 0.20f, 0.20f, 0.20f };
     private static final float[] SLOT_COLOR        = { 0.10f, 0.10f, 0.10f };
     private static final float[] SELECTION_COLOR   = { 1f, 1f, 1f };
     private static final float[] COUNT_COLOR       = { 1f, 1f, 1f };
@@ -92,6 +95,7 @@ public final class HudSystem implements GameSystem, AutoCloseable {
         drawCrosshair(width, height);
         drawHotbar(world, width, height);
         drawHealth(world, width, height);
+        drawFood(world, width, height);
 
         glBindVertexArray(0);
         shader.unbind();
@@ -124,6 +128,17 @@ public final class HudSystem implements GameSystem, AutoCloseable {
         for (int i = 0; i < hearts; i++) {
             float[] color = i < full ? HEART_FULL_COLOR : HEART_EMPTY_COLOR;
             drawRect(HudLayout.heart(i, width, height), color, OPAQUE);
+        }
+    }
+
+    private void drawFood(World world, int width, int height) {
+        Hunger hunger = playerHunger(world);
+        if (hunger == null) return;
+        int icons = HudLayout.foodIconCount(WorldConstants.MAX_FOOD);
+        int full  = Math.max(hunger.food(), 0) / HudLayout.FOOD_PER_ICON;
+        for (int i = 0; i < icons; i++) {
+            float[] color = i < full ? FOOD_FULL_COLOR : FOOD_EMPTY_COLOR;
+            drawRect(HudLayout.food(i, width, height), color, OPAQUE);
         }
     }
 
@@ -201,6 +216,12 @@ public final class HudSystem implements GameSystem, AutoCloseable {
         int[] players = world.query(Health.class);
         if (players.length == 0) return null;
         return world.get(new Entity(players[0]), Health.class).orElse(null);
+    }
+
+    private static Hunger playerHunger(World world) {
+        int[] players = world.query(Hunger.class);
+        if (players.length == 0) return null;
+        return world.get(new Entity(players[0]), Hunger.class).orElse(null);
     }
 
     private static int selectedSlot(World world) {

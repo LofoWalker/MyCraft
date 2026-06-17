@@ -164,12 +164,20 @@ class HealthSystemTest {
                 world.get(player, Breath.class).orElseThrow().air(), 1e-4f);
     }
 
-    // --- regen ---
+    // --- regen ownership (STEP-25) ---
 
+    // Health regen moved to HungerSystem (so it can be gated on / funded by hunger). HealthSystem no
+    // longer heals on its own; it only keeps the post-damage delay clock that HungerSystem reads.
     @Test
-    void healthRegeneratesAfterDelay() {
+    void healthSystemDoesNotRegenerateOnItsOwn() {
         world.add(player, new Health(WorldConstants.MAX_HEALTH - 4, WorldConstants.MAX_HEALTH));
         advance(WorldConstants.REGEN_DELAY_SECONDS + WorldConstants.REGEN_INTERVAL + 0.1f);
-        assertTrue(health() > WorldConstants.MAX_HEALTH - 4);
+        assertEquals(WorldConstants.MAX_HEALTH - 4, health());
+    }
+
+    @Test
+    void sinceDamageTimerAdvancesWhenUnharmed() {
+        advance(1f);
+        assertTrue(world.get(player, DamageTimers.class).orElseThrow().sinceDamage() > 0f);
     }
 }

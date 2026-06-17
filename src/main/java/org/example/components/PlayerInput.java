@@ -11,6 +11,7 @@ public record PlayerInput(
         float mouseDeltaY,
         boolean breakBlock,
         boolean placeBlock,
+        boolean eat,
         int scrollDelta,
         int hotbarSelect
 ) {}

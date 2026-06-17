@@ -11,8 +11,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Applies fall and drowning damage, runs i-frames and slow passive regen, and respawns the player on
- * death. Scheduled in the simulation pass BEFORE {@link CollisionSystem}: fall-impact speed must be
+ * Applies fall and drowning damage, runs i-frames, keeps the post-damage delay clock, and respawns the
+ * player on death. Passive health regen was moved to {@link HungerSystem} (STEP-25) so it can be gated
+ * on and funded by hunger; HealthSystem no longer heals. Scheduled BEFORE {@link CollisionSystem}: the
+ * fall-impact speed must be
  * read from {@link Velocity} while it still carries the real downward speed, because CollisionSystem
  * zeroes Velocity.y the moment it grounds the entity. The largest observed downward speed is stashed
  * in {@link FallSpeed} so that the landing it produces (detected via {@link Grounded} the next tick)
@@ -31,7 +33,7 @@ public final class HealthSystem implements GameSystem {
             int damage = fallDamage(world, entity)
                        + drownDamage(world, entity, chunkMap, dt);
             applyDamage(world, entity, damage);
-            regenerate(world, entity, dt, damage > 0);
+            advanceSinceDamage(world, entity, dt, damage > 0);
             if (isDead(world, entity)) respawn(world, entity);
         }
     }
@@ -109,7 +111,7 @@ public final class HealthSystem implements GameSystem {
         return blockAt(wx, wy, wz, chunkMap) == WorldConstants.BLOCK_WATER;
     }
 
-    // --- Damage / immunity / regen ---
+    // --- Damage / immunity / post-damage clock (regen lives in HungerSystem) ---
 
     private static void applyDamage(World world, Entity entity, int damage) {
         if (damage <= 0 || immune(world, entity)) return;
@@ -129,25 +131,12 @@ public final class HealthSystem implements GameSystem {
         return world.get(entity, DamageImmunity.class).map(DamageImmunity::seconds).orElse(0f) > 0f;
     }
 
-    private static void regenerate(World world, Entity entity, float dt, boolean tookDamage) {
+    // Advances the post-damage delay timer that HungerSystem reads to gate hunger-funded regen. Health
+    // regen itself is OWNED by HungerSystem (see its class doc); HealthSystem only keeps the clock.
+    private static void advanceSinceDamage(World world, Entity entity, float dt, boolean tookDamage) {
         DamageTimers timers = timers(world, entity);
-        if (tookDamage) return;
-        float since = timers.sinceDamage() + dt;
-        if (since < WorldConstants.REGEN_DELAY_SECONDS) {
-            world.add(entity, new DamageTimers(since, timers.drownAccum(), 0f));
-            return;
-        }
-        float accum = timers.regenAccum() + dt;
-        int heals = (int) (accum / WorldConstants.REGEN_INTERVAL);
-        world.add(entity, new DamageTimers(since, timers.drownAccum(),
-                accum - heals * WorldConstants.REGEN_INTERVAL));
-        if (heals > 0) heal(world, entity, heals * WorldConstants.REGEN_AMOUNT);
-    }
-
-    private static void heal(World world, Entity entity, int amount) {
-        Health health = world.get(entity, Health.class).orElseThrow();
-        int restored = Math.min(health.current() + amount, health.max());
-        world.add(entity, new Health(restored, health.max()));
+        float since = tookDamage ? 0f : timers.sinceDamage() + dt;
+        world.add(entity, new DamageTimers(since, timers.drownAccum(), timers.regenAccum()));
     }
 
     // --- Death & respawn ---
@@ -164,6 +153,12 @@ public final class HealthSystem implements GameSystem {
         world.add(entity, new Breath(WorldConstants.BREATH_SECONDS));
         world.add(entity, new FallSpeed(0f));
         world.add(entity, new DamageTimers(0f, 0f, 0f));
+        // Restore hunger on respawn only when the entity actually tracks it, so non-player entities
+        // with Health (if any) are unaffected and HungerSystem keeps sole ownership of the bar.
+        if (world.has(entity, Hunger.class)) {
+            world.add(entity, new Hunger(WorldConstants.MAX_FOOD, WorldConstants.MAX_FOOD));
+            world.add(entity, new HungerTimers(0f, 0f, 0f));
+        }
     }
 
     // --- Component accessors with sane defaults ---

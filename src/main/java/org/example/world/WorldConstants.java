@@ -164,11 +164,43 @@ public final class WorldConstants {
     // I-frames granted by any damage event, so a single hit cannot drain health on back-to-back ticks.
     public static final float DAMAGE_IMMUNITY_SECONDS = 0.5f;
 
-    // Slow passive regen: after this many seconds without taking damage, heal REGEN_AMOUNT every
-    // REGEN_INTERVAL seconds up to MAX_HEALTH.
+    // Slow passive regen (STEP-25 couples it to hunger): after this many seconds without taking
+    // damage, heal REGEN_AMOUNT every REGEN_INTERVAL seconds up to MAX_HEALTH — but ONLY while the
+    // player is well fed (food >= REGEN_FOOD_THRESHOLD). HungerSystem owns this heal so it can both
+    // gate it on food and pay for it by spending hunger; HealthSystem no longer regenerates.
     public static final float REGEN_DELAY_SECONDS = 5.0f;
     public static final float REGEN_INTERVAL      = 2.0f;
     public static final int   REGEN_AMOUNT        = 1;
+
+    // Hunger (STEP-25). Food is whole "drumsticks", MAX_FOOD the full bar (also the respawn amount).
+    // Saturation is a hidden reservoir capped at the current food: activity drains it before food.
+    public static final int   MAX_FOOD = 20;
+
+    // Activity builds "exhaustion"; each EXHAUSTION_THRESHOLD reached spends one saturation point, or
+    // one food point once saturation is empty. The per-activity costs are tuned so ordinary play
+    // drains the bar slowly (sprinting/jumping faster than standing still). Taking damage also tires.
+    public static final float EXHAUSTION_THRESHOLD       = 4.0f;
+    public static final float EXHAUSTION_PER_BLOCK_MOVED = 0.01f;
+    public static final float EXHAUSTION_PER_JUMP        = 0.2f;
+    public static final float EXHAUSTION_PER_DAMAGE      = 0.1f;
+
+    // Health regen is gated on a near-full bar; each heal spends one food/saturation point so a player
+    // cannot heal indefinitely without eating.
+    public static final int   REGEN_FOOD_THRESHOLD = 18;
+    public static final float REGEN_HUNGER_COST     = 1.0f;
+
+    // Starvation: at food == 0 the player loses STARVE_DAMAGE every STARVE_INTERVAL seconds. For this
+    // project starvation may reach 0 health (no min-health floor like vanilla's easy mode).
+    public static final float STARVE_INTERVAL = 4.0f;
+    public static final int   STARVE_DAMAGE   = 1;
+
+    // Consumable item ids live OUTSIDE the block id range (blocks are 0..9) so a food id is never
+    // mistaken for a placeable block. See world.Foods for their restore values.
+    public static final int ITEM_APPLE = 100;
+    public static final int ITEM_BREAD = 101;
+
+    // Highest valid block id; an item id above this is a non-block (e.g. food) and must not be placed.
+    public static final int MAX_BLOCK_ID = BLOCK_TORCH;
 
     // TODO(STEP-24): lava contact damage + short i-frames once BLOCK_LAVA and its atlas tile exist.
     // Out of scope here: no lava block/tile is added, so the HealthSystem only handles fall + drowning.

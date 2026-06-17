@@ -42,10 +42,12 @@ public class Main {
         world.add(player, new ColliderAABB(0.6f, 1.8f, 0.6f));
         world.add(player, new CameraComponent(70f, 0.1f, 1000f));
         world.add(player, new PlayerInput(false, false, false, false, false, false, 0f, 0f, false, false,
-                0, WorldConstants.NO_HOTBAR_SELECT));
+                false, 0, WorldConstants.NO_HOTBAR_SELECT));
         world.add(player, new Hotbar(0));
         world.add(player, startingInventory());
         world.add(player, new Health(WorldConstants.MAX_HEALTH, WorldConstants.MAX_HEALTH));
+        world.add(player, new Hunger(WorldConstants.MAX_FOOD, WorldConstants.MAX_FOOD));
+        world.add(player, new HungerTimers(0f, 0f, 0f));
         world.add(player, new Breath(WorldConstants.BREATH_SECONDS));
         world.add(player, new DamageImmunity(0f));
         world.add(player, new DamageTimers(0f, 0f, 0f));
@@ -76,6 +78,9 @@ public class Main {
             simScheduler.add(new ItemMotionSystem());
             // Before CollisionSystem: it captures fall-impact Velocity.y before collision zeroes it.
             simScheduler.add(new HealthSystem());
+            // After HealthSystem: hunger-funded regen/starvation reads this tick's settled health and
+            // the post-damage delay timer; HungerSystem (not HealthSystem) owns all health regen.
+            simScheduler.add(new HungerSystem());
             simScheduler.add(new CollisionSystem());
             simScheduler.add(new ItemPickupSystem());
 
@@ -100,6 +105,8 @@ public class Main {
         inventory = Inventories.add(inventory, new ItemStack(WorldConstants.BLOCK_DIRT,  WorldConstants.MAX_STACK)).inventory();
         inventory = Inventories.add(inventory, new ItemStack(WorldConstants.BLOCK_WOOD,  WorldConstants.MAX_STACK)).inventory();
         inventory = Inventories.add(inventory, new ItemStack(WorldConstants.BLOCK_TORCH, WorldConstants.MAX_STACK)).inventory();
+        // A stack of food (non-block id) so eating (key F) is testable in-game; it is NOT placeable.
+        inventory = Inventories.add(inventory, new ItemStack(WorldConstants.ITEM_BREAD, 8)).inventory();
         return inventory;
     }
 

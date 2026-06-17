@@ -84,7 +84,8 @@ public final class BlockInteractionSystem implements GameSystem {
 
         int activeSlot = activeHotbarSlot(world, player);
         ItemStack held = heldStack(world, player, activeSlot);
-        if (held.isEmpty()) return; // empty slot -> nothing to place
+        if (held.isEmpty()) return;          // empty slot -> nothing to place
+        if (!isPlaceableBlock(held)) return; // food / non-block item -> never placed as a block
 
         VoxelRaycast.RaycastHit h = hit.get();
         int cx = h.x() + h.faceX();
@@ -94,6 +95,13 @@ public final class BlockInteractionSystem implements GameSystem {
 
         writer.write(world, cx, cy, cz, (byte) held.itemId());
         consumeOne(world, player, activeSlot);
+    }
+
+    // Only real block ids (1..MAX_BLOCK_ID) can be placed. AIR is a no-op and food ids live above the
+    // block range (see WorldConstants.ITEM_*), so eating a food never drops a phantom block.
+    private static boolean isPlaceableBlock(ItemStack held) {
+        int id = held.itemId();
+        return id > WorldConstants.BLOCK_AIR && id <= WorldConstants.MAX_BLOCK_ID;
     }
 
     private static boolean canPlaceAt(World world, Entity player, int cx, int cy, int cz,
