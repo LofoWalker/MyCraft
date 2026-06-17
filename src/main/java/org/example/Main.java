@@ -51,7 +51,8 @@ public class Main {
              SkySystem sky = new SkySystem();
              BlockHighlightSystem blockHighlight = new BlockHighlightSystem();
              BlockBreakOverlaySystem breakOverlay = new BlockBreakOverlaySystem();
-             ItemRenderSystem itemRender = new ItemRenderSystem()) {
+             ItemRenderSystem itemRender = new ItemRenderSystem();
+             HudSystem hud = new HudSystem(window)) {
 
             simScheduler.add(new InputSystem(window));
             simScheduler.add(new HotbarSelectionSystem());
@@ -70,6 +71,7 @@ public class Main {
             renderScheduler.add(blockHighlight);
             renderScheduler.add(breakOverlay);
             renderScheduler.add(itemRender);
+            renderScheduler.add(hud);
 
             GameLoop.run(window, world, simScheduler, renderScheduler);
         }
