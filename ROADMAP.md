@@ -150,6 +150,208 @@ Réalisé :
 
 ---
 
+# 🌍 Phase 2 — Vers la « beta »
+
+> **But de la phase :** atteindre une boucle de jeu comparable à Minecraft beta (b1.7/1.8) :
+> casser **et poser**, inventaire/craft, textures + lumière, survie (vie/faim), mobs, fluides,
+> biomes, sauvegarde et son. On garde les **règles ECS** : composants = `record` data-only,
+> systèmes = logique pure stateless, zéro héritage gameplay, pas de hashmap en boucle chaude,
+> virtual threads réservés gen/meshing/IO.
+
+> 🎫 **Tickets rédigés :** chaque step de la Phase 2 (13 → 37) dispose d'un ticket détaillé,
+> prêt à être développé en autonomie par un agent IA, dans `tickets/` (index : `tickets/README.md`).
+
+## Déjà fait depuis le Step 12 (hors tableau d'origine)
+- **Worldgen avancée** (`worldgen/`) : `GenerationPipeline` à étages — `TerrainStage`, `CaveStage`,
+  `WaterSettleStage`, `TreeStage`, `OreStage` (fer/diamant). ⚠️ Actuellement court-circuitée par
+  `FlatTerrainStage` (monde plat temporaire) → **à réactiver (Step 13)**.
+- **Ciel procédural** : `SkySystem` (soleil + nuages animés), direction de soleil **fixe**.
+- **Casser des blocs** : `BlockInteractionSystem` (raycast voxel Amanatides-Woo), système de hits
+  via `BlockType.hardness()` + `BlockBreakProgress`, overlay de progression (`BlockBreakOverlaySystem`).
+
+## Écarts majeurs vs beta (vue d'ensemble)
+| Domaine | Existant | Manque |
+|---|---|---|
+| Interaction | casser (raycast + hits) | **poser**, surbrillance du bloc visé, choix du bloc |
+| Inventaire | — | hotbar, inventaire, drops, ramassage |
+| Rendu | couleurs unies, face+frustum culling | **textures (atlas)**, **lumière** (sky/block), transparence eau, AO |
+| Survie | — | vie, faim, dégâts (chute/noyade), respawn |
+| Items | — | registre items, stacks, **craft**, outils, fourneau, coffre |
+| Monde vivant | — | **mobs** (passifs/hostiles), IA/pathfinding, spawn |
+| Simulation | gen statique | **fluides dynamiques**, gravité sable/gravier, biomes |
+| Méta | — | **sauvegarde/chargement**, **son** (OpenAL), menus |
+
+---
+
+## Milestone A — Boucle d'interaction complète
+*Rendre le monde « jouable » : poser, viser, ramasser, et vrai terrain.*
+
+### Step 13 — Réactiver la vraie génération
+- Retirer/condition­ner `FlatTerrainStage`, rebrancher le pipeline complet dans `WorldGenSystem`.
+- Vérifier collisions/streaming sur terrain accidenté (montagnes, eau, grottes).
+- ✅ *Critère : spawn sur terrain ondulé avec arbres/minerais, pas de blocage de chunk.*
+
+### Step 14 — Surbrillance du bloc visé
+- Nouveau `BlockHighlightSystem` (rendu) : wireframe sur la cible du raycast (réutiliser le ray de
+  `BlockInteractionSystem` — extraire le raycast dans un util partagé `world/VoxelRaycast`).
+- ✅ *Critère : un contour suit le bloc regardé dans la portée.*
+
+### Step 15 — Poser des blocs
+- Étendre `PlayerInput` : `placeBlock` (clic droit). Calculer la **face** touchée (normale) dans le
+  raycast → poser dans la cellule adjacente si vide et non en collision avec le joueur.
+- `ChunkDirty` sur le chunk modifié (remeshing déjà géré).
+- ✅ *Critère : clic droit pose le bloc courant sur la face visée ; pas de pose dans le joueur.*
+
+### Step 16 — Inventaire & hotbar (données)
+- Components : `Inventory(ItemStack[] slots)`, `Hotbar(int selectedSlot)`, `ItemStack(int itemId, int count)`.
+- Molette/touches 1-9 → slot sélectionné ; le bloc posé (Step 15) = item du slot actif.
+- ✅ *Critère (tests JUnit) : ajout/retrait/empilement d'items, sélection de slot.*
+
+### Step 17 — HUD 2D (overlay ortho)
+- `HudSystem` : passe orthographique (crosshair, barre de hotbar, slot sélectionné).
+- Rendu de texte/icônes via un atlas bitmap (préfigure le Milestone B).
+- ✅ *Critère : crosshair centré + hotbar visible reflétant l'inventaire.*
+
+### Step 18 — Drops d'items & ramassage
+- Casser un bloc spawn une **entité item** (`ItemEntity`, `Position`, `Velocity`, `ItemStack`,
+  collider réduit) ; physique réutilisée.
+- `ItemPickupSystem` : aimantation + collecte dans l'`Inventory` quand le joueur s'approche.
+- ✅ *Critère : casser un bloc fait tomber un item ramassable qui remplit la hotbar.*
+
+---
+
+## Milestone B — Rendu fidèle (textures + lumière)
+*Le plus gros saut visuel.*
+
+### Step 19 — Atlas de textures
+- `render/TextureAtlas` (chargement PNG via `stb_image`), UV par face dans `BlockType`
+  (top/side/bottom). Adapter le format de vertex du meshing (ajout UV) et le shader.
+- ✅ *Critère : blocs texturés (herbe/terre/pierre/bois…), 1 seul texture bind.*
+
+### Step 20 — Eau & transparence
+- Pass translucide séparé (blend, depth-write off, tri arrière→avant par chunk), faces d'eau
+  non cullées entre elles ; surface légèrement abaissée.
+- ✅ *Critère : eau semi-transparente correcte, pas de z-fighting.*
+
+### Step 21 — Moteur de lumière (skylight + blocklight)
+- Champ de lumière par chunk (`byte[]`, 4 bits sky + 4 bits block), propagation **flood-fill BFS**
+  recalculée à la modification de bloc, sur virtual threads comme le meshing.
+- Le meshing écrit un niveau de lumière par face → assombrissement dans le shader.
+- Source de bloc : torche (nouveau `BlockType`, light=14).
+- ✅ *Critère : grottes sombres, torches éclairent un rayon, faces orientées différemment ombrées.*
+
+### Step 22 — Ambient occlusion (smooth lighting)
+- AO par sommet (coins de voxels) calculée au meshing → rendu « smooth lighting » beta.
+- ✅ *Critère : coins/recoins légèrement assombris, aspect beta.*
+
+---
+
+## Milestone C — Survie (cycle, vie, faim)
+
+### Step 23 — Cycle jour/nuit
+- `TimeOfDay` (composant ou singleton world) ; `SkySystem` pilote la direction du soleil + couleurs ;
+  niveau de skylight global dérivé de l'heure.
+- ✅ *Critère : soleil/lune se déplacent, le monde s'assombrit la nuit.*
+
+### Step 24 — Vie & dégâts
+- `Health(int current, int max)` ; dégâts de **chute** (depuis la vélocité d'impact), **noyade**
+  (tête sous l'eau > délai), lave. Régénération si conditions (faim pleine, étape 25).
+- Mort → écran/respawn au point de spawn.
+- ✅ *Critère : grosse chute blesse, rester sous l'eau noie, la mort respawn.*
+
+### Step 25 — Faim & nourriture (beta 1.8)
+- `Hunger(int food, float saturation)` ; se vide à l'effort, régule la régen, affame à 0.
+- Items consommables (pomme/viande) qui restaurent la faim.
+- HUD : barres cœurs + nourriture.
+- ✅ *Critère : la faim baisse, manger la restaure, faim à 0 fait perdre de la vie.*
+
+---
+
+## Milestone D — Items, craft & blocs fonctionnels
+
+### Step 26 — Registre d'items & outils
+- `ItemRegistry` (id → type, max stack, durabilité), familles d'outils (pioche/hache/pelle/épée).
+- Vitesse de minage & drops dépendant de l'outil/matériau (étendre la logique de hits actuelle) ;
+  diamant ne droppe qu'avec pioche fer+.
+- ✅ *Critère : pioche casse la pierre plus vite, mauvais outil = pas/peu de drop.*
+
+### Step 27 — Craft (2×2 + table 3×3)
+- Grille de craft dans l'inventaire (2×2) + bloc `CraftingTable` (3×3) ; `RecipeBook` (recettes
+  shaped/shapeless) ; UI d'inventaire (écran modal, curseur libre).
+- ✅ *Critère : planches→établi→outils, recettes shaped fonctionnent.*
+
+### Step 28 — Fourneau & coffre
+- `Furnace` (entrée/combustible/sortie, progression de cuisson, recettes de fonte) ;
+  `Chest` (stockage persistant lié au bloc).
+- ✅ *Critère : fondre minerai en lingot, stocker/récupérer dans un coffre.*
+
+---
+
+## Milestone E — Monde vivant (mobs)
+
+### Step 29 — Cadre entités mobiles + rendu
+- Components mob : `MobType`, `Health`, IA (`AiState`), `PathTarget`. Rendu de modèles simples
+  (boîtes texturées) via un `EntityRenderSystem`.
+- ✅ *Critère : une entité de test se déplace et se rend dans le monde.*
+
+### Step 30 — Mobs passifs + spawn
+- Vache/cochon/mouton/poule : errance aléatoire, fuite, drops à la mort. Règles de spawn (lumière
+  jour, surface herbe), cap de population par zone.
+- ✅ *Critère : des animaux apparaissent de jour, errent, droppent en mourant.*
+
+### Step 31 — Mobs hostiles + combat + IA
+- Zombie/squelette/araignée/creeper : spawn à faible lumière, pathfinding A* vers le joueur,
+  attaque au contact, combustion au jour pour les morts-vivants. Combat joueur (épée, knockback).
+- ✅ *Critère : la nuit, des hostiles traquent et blessent ; on peut les tuer.*
+
+---
+
+## Milestone F — Simulation dynamique du monde
+
+### Step 32 — Fluides dynamiques
+- Écoulement eau/lave (niveaux 0-7, propagation décrémentale, mise à jour en file d'updates de
+  blocs), lave+eau→pierre/obsidienne.
+- ✅ *Critère : casser un mur d'eau la fait couler et se niveler.*
+
+### Step 33 — Gravité de blocs & ticks aléatoires
+- Sable/gravier tombent ; système de **random tick** par chunk (croissance d'herbe, propagation,
+  base pour cultures).
+- ✅ *Critère : sable suspendu tombe ; la terre nue se recouvre d'herbe.*
+
+### Step 34 — Biomes
+- Cartes température/humidité (bruit basse fréquence) → palette de blocs, densité d'arbres, teinte
+  d'herbe par biome (plaine, désert, forêt, montagne, océan).
+- ✅ *Critère : transitions de biomes visibles, déserts sans herbe, forêts denses.*
+
+---
+
+## Milestone G — Persistance, audio & menus
+
+### Step 35 — Sauvegarde / chargement du monde
+- Sérialisation des chunks modifiés (fichiers région), state joueur (pos/inventaire/vie), seed.
+- IO sur virtual threads ; chargement à la demande, fusion gen ↔ disque.
+- ✅ *Critère : quitter/relancer restitue le terrain modifié, l'inventaire et la position.*
+
+### Step 36 — Audio (OpenAL)
+- `audio/SoundEngine` (LWJGL OpenAL), sons positionnels (pas, casse/pose, mobs), musique d'ambiance.
+- ✅ *Critère : sons spatialisés sur les actions clés.*
+
+### Step 37 — Menus & modes de jeu
+- Menu principal (nouveau/charger monde), pause, sélection **Survie/Créatif** (vol + ressources
+  infinies en créatif).
+- ✅ *Critère : créer/charger un monde depuis un menu, basculer de mode.*
+
+---
+
+## Suggestions d'ordonnancement
+- **Prioritaire (jouabilité immédiate) :** Steps 13-18 (poser + inventaire + HUD + vrai terrain).
+- **Impact visuel max :** Milestone B (textures puis lumière).
+- **Steps les plus lourds :** 21 (lumière), 27 (craft), 31 (IA mobs), 35 (sauvegarde) — prévoir
+  plus de temps et de tests.
+- Chaque step reste **compilable, testé (JUnit pour la logique), commité** `STEP-N: …`.
+
+---
+
 ## Ordre d'exécution des systems (cible)
 ```
 InputSystem → PhysicsSystem → CollisionSystem → MovementSystem

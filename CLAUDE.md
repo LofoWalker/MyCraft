@@ -58,6 +58,11 @@ InputSystem → PhysicsSystem → CollisionSystem → MovementSystem
 | 11 | Chunks dynamiques (streaming + virtual threads) | ✅ Done |
 | 12 | Polish & perfs (frustum culling, zéro alloc rendu) | ✅ Done |
 
+### Phase 2 (vers la beta) — Steps 13 à 37
+Détaillée dans `ROADMAP.md` (milestones A→G). **Tous les tickets de la phase 2 sont rédigés** dans
+`tickets/` (un fichier `TICKET-N-*.md` par step, prêts pour un agent en autonomie) — voir
+`tickets/README.md` pour l'index et le mode d'emploi. Steps 13-18 (interaction) en cours ; 19-37 à venir.
+
 ## Conventions clean code
 - **Noms expressifs** — pas d'abréviations sauf conventions établies (`dt`, `dx`, `ebo`).
 - **Méthodes courtes** — < 20 lignes, une responsabilité par méthode.
