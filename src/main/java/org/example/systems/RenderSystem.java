@@ -3,6 +3,7 @@ package org.example.systems;
 import org.example.components.ChunkMeshComponent;
 import org.example.components.Position;
 import org.example.components.RenderCamera;
+import org.example.components.TimeOfDay;
 import org.example.ecs.Entity;
 import org.example.ecs.GameSystem;
 import org.example.ecs.World;
@@ -67,15 +68,25 @@ public final class RenderSystem implements GameSystem {
         viewProjection.set(camera.projection()).mul(camera.view());
         frustum.update(viewProjection);
 
-        int waterCount = drawOpaqueAndCollectWater(world, camera);
-        drawWaterPass(camera, waterCount);
+        float dayFactor = globalLightFactor(world);
+        int waterCount = drawOpaqueAndCollectWater(world, camera, dayFactor);
+        drawWaterPass(camera, waterCount, dayFactor);
     }
 
-    private int drawOpaqueAndCollectWater(World world, RenderCamera camera) {
+    // Global skylight factor in [NIGHT_LIGHT, 1] read from the day/night clock (full day if absent).
+    private float globalLightFactor(World world) {
+        int[] clocks = world.query(TimeOfDay.class);
+        if (clocks.length == 0) return 1.0f;
+        float dayFraction = world.get(new Entity(clocks[0]), TimeOfDay.class).orElseThrow().dayFraction();
+        return TimeSystem.globalLightFactor(dayFraction);
+    }
+
+    private int drawOpaqueAndCollectWater(World world, RenderCamera camera, float dayFactor) {
         shader.bind();
         // One atlas bind for the whole chunk pass: every chunk samples the same texture on unit 0.
         atlas.bind(ATLAS_TEXTURE_UNIT);
         shader.setUniform1i("uAtlas", ATLAS_TEXTURE_UNIT);
+        shader.setUniform1f("uDayFactor", dayFactor);
         shader.setUniformMatrix4f("uView",       camera.view());
         shader.setUniformMatrix4f("uProjection", camera.projection());
 
@@ -105,7 +116,7 @@ public final class RenderSystem implements GameSystem {
         return count + 1;
     }
 
-    private void drawWaterPass(RenderCamera camera, int waterCount) {
+    private void drawWaterPass(RenderCamera camera, int waterCount, float dayFactor) {
         if (waterCount == 0) return;
         // Camera world position is the translation of the inverse view matrix.
         camera.view().invert(invView);
@@ -125,6 +136,7 @@ public final class RenderSystem implements GameSystem {
         waterShader.setUniform3f("uWaterTint",
                 WorldConstants.WATER_TINT_R, WorldConstants.WATER_TINT_G, WorldConstants.WATER_TINT_B);
         waterShader.setUniform1f("uWaterAlpha", WorldConstants.WATER_ALPHA);
+        waterShader.setUniform1f("uDayFactor", dayFactor);
 
         for (int i = 0; i < waterCount; i++) {
             int c = waterOrder[i];

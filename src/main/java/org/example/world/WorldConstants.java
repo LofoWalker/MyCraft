@@ -135,4 +135,13 @@ public final class WorldConstants {
     // Fraction of horizontal speed shed each tick once a drop rests on the ground (0 = frictionless,
     // 1 = stops instantly), so the spawn scatter dies out instead of sliding forever.
     public static final float ITEM_GROUND_FRICTION   = 0.3f;
+
+    // Day/night cycle (STEP-23). dayFraction in [0,1): 0=dawn, 0.25=noon, 0.5=dusk, 0.75=midnight.
+    // A full real-time day lasts DAY_LENGTH_SECONDS. Sun height drives a global skylight factor that
+    // never falls below NIGHT_LIGHT, so torches and interiors stay readable in the dark.
+    public static final float DAY_LENGTH_SECONDS = 600.0f;
+    public static final float NIGHT_LIGHT        = 0.18f;
+    // Fraction of the day spent in dawn=0 and noon=0.25 etc. is fixed by the sine of dayFraction;
+    // these thresholds shape the global-light ramp between night and full day.
+    public static final float DAY_LIGHT_HORIZON_MARGIN = 0.05f;
 }

@@ -45,6 +45,9 @@ public class Main {
         world.add(player, new Hotbar(0));
         world.add(player, startingInventory());
 
+        Entity worldClock = world.create();
+        world.add(worldClock, new TimeOfDay(0f));
+
         window.captureCursor();
 
         try (Shader shader = Shader.fromResources("/shaders/basic.vert", "/shaders/basic.frag");
@@ -57,6 +60,7 @@ public class Main {
              ItemRenderSystem itemRender = new ItemRenderSystem();
              HudSystem hud = new HudSystem(window)) {
 
+            simScheduler.add(new TimeSystem());
             simScheduler.add(new InputSystem(window));
             simScheduler.add(new HotbarSelectionSystem());
             simScheduler.add(new BlockInteractionSystem());
