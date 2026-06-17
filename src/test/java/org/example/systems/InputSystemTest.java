@@ -22,7 +22,7 @@ class InputSystemTest {
     void setUp() {
         world  = new World();
         player = world.create();
-        world.add(player, new PlayerInput(false, false, false, false, false, false, 0f, 0f, false));
+        world.add(player, new PlayerInput(false, false, false, false, false, false, 0f, 0f, false, false));
     }
 
     /** Build an InputSystem where only the given GLFW key codes are considered pressed. */

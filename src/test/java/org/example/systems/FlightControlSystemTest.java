@@ -19,12 +19,12 @@ class FlightControlSystemTest {
     void setUp() {
         world  = new World();
         player = world.create();
-        world.add(player, new PlayerInput(false, false, false, false, false, false, 0f, 0f, false));
+        world.add(player, new PlayerInput(false, false, false, false, false, false, 0f, 0f, false, false));
         system = new FlightControlSystem();
     }
 
     private void step(boolean jump, float dt) {
-        world.add(player, new PlayerInput(false, false, false, false, jump, false, 0f, 0f, false));
+        world.add(player, new PlayerInput(false, false, false, false, jump, false, 0f, 0f, false, false));
         system.update(world, dt);
     }
 

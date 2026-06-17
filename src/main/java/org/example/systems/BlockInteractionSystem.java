@@ -2,8 +2,7 @@ package org.example.systems;
 
 import org.example.components.BlockBreakProgress;
 import org.example.components.CameraComponent;
-import org.example.components.ChunkComponent;
-import org.example.components.ChunkDirty;
+import org.example.components.ColliderAABB;
 import org.example.components.PlayerInput;
 import org.example.components.Position;
 import org.example.components.Rotation;
@@ -12,24 +11,27 @@ import org.example.components.VoxelChunkData;
 import org.example.ecs.Entity;
 import org.example.ecs.GameSystem;
 import org.example.ecs.World;
+import org.example.world.AABBCell;
 import org.example.world.BlockType;
 import org.example.world.ChunkView;
 import org.example.world.VoxelRaycast;
 import org.example.world.WorldConstants;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-// Drives block targeting and breaking: every tick it raycasts from the eye along the view direction
-// (via the shared VoxelRaycast) and records the looked-at voxel as TargetedBlock for the renderer.
-// On a fresh break press it accumulates damage on that voxel; a block breaks only once the damage
-// reaches its hardness, so harder blocks need more hits and switching target resets progress.
-// Edge-triggered (one hit per press). Mesh rebuilding is owned by ChunkStreamingSystem.
+// Drives block targeting, breaking and placing: every tick it raycasts from the eye along the view
+// direction (via the shared VoxelRaycast) and records the looked-at voxel as TargetedBlock for the
+// renderer. A fresh left-click accumulates damage on that voxel (harder blocks need more hits); a
+// fresh right-click places the selected block against the targeted face, unless the cell is occupied
+// or would overlap the player. Both edits go through the shared ChunkVoxelWriter, which marks the
+// owning chunk dirty (current or neighbour). Edge-triggered (one action per press); mesh rebuilding
+// is owned by ChunkStreamingSystem.
 public final class BlockInteractionSystem implements GameSystem {
 
-    // Edge detection: a held mouse button must not break a block every frame.
+    // Edge detection: a held mouse button must not repeat its action every frame.
     private boolean breakHeldPreviously;
+    private boolean placeHeldPreviously;
 
     @Override
     public void update(World world, float dt) {
@@ -41,12 +43,12 @@ public final class BlockInteractionSystem implements GameSystem {
         Position    pos    = world.get(player, Position.class).orElseThrow();
         Rotation    rot    = world.get(player, Rotation.class).orElseThrow();
 
-        Map<Long, Integer>        chunkEntities = new HashMap<>();
-        Map<Long, VoxelChunkData> chunkData     = buildChunkMaps(world, chunkEntities);
-        Optional<VoxelRaycast.RaycastHit> hit   = castFromEye(pos, rot, chunkData);
+        ChunkVoxelWriter writer = ChunkVoxelWriter.snapshot(world);
+        Optional<VoxelRaycast.RaycastHit> hit = castFromEye(pos, rot, writer.chunkData());
 
         updateTarget(world, player, hit);
-        applyBreak(world, player, input, hit, chunkEntities, chunkData);
+        applyBreak(world, player, input, hit, writer);
+        applyPlace(world, player, input, hit, writer);
     }
 
     private void updateTarget(World world, Entity player, Optional<VoxelRaycast.RaycastHit> hit) {
@@ -59,15 +61,43 @@ public final class BlockInteractionSystem implements GameSystem {
     }
 
     private void applyBreak(World world, Entity player, PlayerInput input,
-                            Optional<VoxelRaycast.RaycastHit> hit,
-                            Map<Long, Integer> chunkEntities, Map<Long, VoxelChunkData> chunkData) {
+                            Optional<VoxelRaycast.RaycastHit> hit, ChunkVoxelWriter writer) {
         boolean breakNow    = input.breakBlock();
         boolean justPressed = breakNow && !breakHeldPreviously;
         breakHeldPreviously = breakNow;
         if (!justPressed || hit.isEmpty()) return;
 
         VoxelRaycast.RaycastHit h = hit.get();
-        damageBlock(world, player, h.x(), h.y(), h.z(), chunkEntities, chunkData);
+        damageBlock(world, player, h.x(), h.y(), h.z(), writer);
+    }
+
+    private void applyPlace(World world, Entity player, PlayerInput input,
+                            Optional<VoxelRaycast.RaycastHit> hit, ChunkVoxelWriter writer) {
+        boolean placeNow    = input.placeBlock();
+        boolean justPressed = placeNow && !placeHeldPreviously;
+        placeHeldPreviously = placeNow;
+        if (!justPressed || hit.isEmpty()) return;
+
+        VoxelRaycast.RaycastHit h = hit.get();
+        int cx = h.x() + h.faceX();
+        int cy = h.y() + h.faceY();
+        int cz = h.z() + h.faceZ();
+        if (!canPlaceAt(world, player, cx, cy, cz, writer)) return;
+
+        writer.write(world, cx, cy, cz, selectedBlock(world, player));
+    }
+
+    private static boolean canPlaceAt(World world, Entity player, int cx, int cy, int cz,
+                                      ChunkVoxelWriter writer) {
+        if (writer.blockAt(cx, cy, cz) != WorldConstants.BLOCK_AIR) return false;
+        Position     pos = world.get(player, Position.class).orElseThrow();
+        ColliderAABB box = world.get(player, ColliderAABB.class).orElseThrow();
+        return !AABBCell.playerOverlapsCell(pos, box, cx, cy, cz);
+    }
+
+    // Hook for STEP-16's hotbar: the placed block id will come from the player's selected slot.
+    private static byte selectedBlock(World world, Entity player) {
+        return WorldConstants.BLOCK_STONE;
     }
 
     private static Optional<VoxelRaycast.RaycastHit> castFromEye(Position pos, Rotation rot,
@@ -87,12 +117,11 @@ public final class BlockInteractionSystem implements GameSystem {
         return VoxelRaycast.cast(eyeX, eyeY, eyeZ, dirX, dirY, dirZ, WorldConstants.PLAYER_REACH, view);
     }
 
-    private void damageBlock(World world, Entity player, int wx, int wy, int wz,
-                             Map<Long, Integer> chunkEntities, Map<Long, VoxelChunkData> chunkData) {
+    private void damageBlock(World world, Entity player, int wx, int wy, int wz, ChunkVoxelWriter writer) {
         int damage = accumulatedDamage(world, player, wx, wy, wz);
-        int hardness = BlockType.byId(blockAt(wx, wy, wz, chunkData)).hardness();
+        int hardness = BlockType.byId(writer.blockAt(wx, wy, wz)).hardness();
         if (damage >= hardness) {
-            removeBlock(world, wx, wy, wz, chunkEntities, chunkData);
+            writer.write(world, wx, wy, wz, WorldConstants.BLOCK_AIR);
             world.remove(player, BlockBreakProgress.class);
         } else {
             world.add(player, new BlockBreakProgress(wx, wy, wz, damage));
@@ -106,38 +135,5 @@ public final class BlockInteractionSystem implements GameSystem {
                 .map(BlockBreakProgress::damage)
                 .orElse(0);
         return previous + WorldConstants.BARE_HAND_DAMAGE;
-    }
-
-    private static byte blockAt(int wx, int wy, int wz, Map<Long, VoxelChunkData> chunkData) {
-        int s  = WorldConstants.CHUNK_SIZE_XZ;
-        int cx = Math.floorDiv(wx, s);
-        int cz = Math.floorDiv(wz, s);
-        return chunkData.get(CollisionSystem.chunkKey(cx, cz)).get(wx - cx * s, wy, wz - cz * s);
-    }
-
-    private static void removeBlock(World world, int wx, int wy, int wz,
-                                    Map<Long, Integer> chunkEntities, Map<Long, VoxelChunkData> chunkData) {
-        int s   = WorldConstants.CHUNK_SIZE_XZ;
-        int cx  = Math.floorDiv(wx, s);
-        int cz  = Math.floorDiv(wz, s);
-        long key = CollisionSystem.chunkKey(cx, cz);
-        Integer entityId = chunkEntities.get(key);
-        VoxelChunkData data = chunkData.get(key);
-        if (entityId == null || data == null) return;
-
-        data.set(wx - cx * s, wy, wz - cz * s, WorldConstants.BLOCK_AIR);
-        world.add(new Entity(entityId), new ChunkDirty());
-    }
-
-    private static Map<Long, VoxelChunkData> buildChunkMaps(World world, Map<Long, Integer> entitiesOut) {
-        Map<Long, VoxelChunkData> data = new HashMap<>();
-        for (int eid : world.query(ChunkComponent.class, VoxelChunkData.class)) {
-            Entity         entity = new Entity(eid);
-            ChunkComponent chunk  = world.get(entity, ChunkComponent.class).orElseThrow();
-            long key = CollisionSystem.chunkKey(chunk.x(), chunk.z());
-            data.put(key, world.get(entity, VoxelChunkData.class).orElseThrow());
-            entitiesOut.put(key, eid);
-        }
-        return data;
     }
 }

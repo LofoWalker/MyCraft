@@ -79,10 +79,11 @@ public final class InputSystem implements GameSystem {
         boolean strafeRight = keyQuery.getKey(windowHandle, GLFW_KEY_D)     == GLFW_PRESS;
         boolean jump        = keyQuery.getKey(windowHandle, GLFW_KEY_SPACE)        == GLFW_PRESS;
         boolean descend     = keyQuery.getKey(windowHandle, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS;
-        boolean breakBlock  = mouseButtonQuery.getButton(windowHandle, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
+        boolean breakBlock  = mouseButtonQuery.getButton(windowHandle, GLFW_MOUSE_BUTTON_LEFT)  == GLFW_PRESS;
+        boolean placeBlock  = mouseButtonQuery.getButton(windowHandle, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
 
         for (int eid : world.query(PlayerInput.class)) {
-            world.add(new Entity(eid), new PlayerInput(forward, backward, strafeLeft, strafeRight, jump, descend, dx, dy, breakBlock));
+            world.add(new Entity(eid), new PlayerInput(forward, backward, strafeLeft, strafeRight, jump, descend, dx, dy, breakBlock, placeBlock));
         }
     }
 }

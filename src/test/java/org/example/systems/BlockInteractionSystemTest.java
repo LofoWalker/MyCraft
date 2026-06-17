@@ -2,6 +2,7 @@ package org.example.systems;
 
 import org.example.components.BlockBreakProgress;
 import org.example.components.CameraComponent;
+import org.example.components.ColliderAABB;
 import org.example.components.ChunkComponent;
 import org.example.components.ChunkDirty;
 import org.example.components.PlayerInput;
@@ -129,6 +130,89 @@ class BlockInteractionSystemTest {
         assertEquals(WorldConstants.BLOCK_STONE, data.get(3, 60, 2));
     }
 
+    @Test
+    void rightClickPlacesBlockAgainstTargetedFace() {
+        World world = new World();
+        VoxelChunkData data = VoxelChunkData.empty();
+        data.set(2, 60, 2, WorldConstants.BLOCK_STONE);
+        Entity chunk  = spawnChunk(world, data);
+        Entity player = spawnPlayer(world);
+        BlockInteractionSystem system = new BlockInteractionSystem();
+
+        place(world, player, system); // looking -z, enters block from +z face -> cell (2,60,3)
+
+        assertEquals(WorldConstants.BLOCK_STONE, data.get(2, 60, 3));
+        assertTrue(world.has(chunk, ChunkDirty.class));
+    }
+
+    @Test
+    void placementRefusedWhenCellNotAir() {
+        World world = new World();
+        VoxelChunkData data = VoxelChunkData.empty();
+        data.set(2, 60, 2, WorldConstants.BLOCK_STONE); // targeted
+        data.set(2, 60, 3, WorldConstants.BLOCK_DIRT);  // adjacent cell already filled
+        spawnChunk(world, data);
+        Entity player = spawnPlayer(world);
+        BlockInteractionSystem system = new BlockInteractionSystem();
+
+        place(world, player, system);
+
+        assertEquals(WorldConstants.BLOCK_DIRT, data.get(2, 60, 3)); // unchanged
+    }
+
+    @Test
+    void placementRefusedWhenItWouldTrapThePlayer() {
+        World world = new World();
+        VoxelChunkData data = VoxelChunkData.empty();
+        Entity player = spawnPlayer(world);
+        Position p = world.get(player, Position.class).orElseThrow();
+        // Stand on the chunk and target a block one cell below the feet, so the face above it is the
+        // very cell the player occupies.
+        int feetX = (int) Math.floor(p.x());
+        int feetY = (int) Math.floor(p.y());
+        int feetZ = (int) Math.floor(p.z());
+        data.set(feetX, feetY - 1, feetZ, WorldConstants.BLOCK_STONE);
+        spawnChunk(world, data);
+        aimStraightDown(world, player);
+        BlockInteractionSystem system = new BlockInteractionSystem();
+
+        place(world, player, system); // would place at feetY (inside the player) -> refused
+
+        assertEquals(WorldConstants.BLOCK_AIR, data.get(feetX, feetY, feetZ));
+    }
+
+    @Test
+    void heldRightButtonPlacesOnlyOnePerPress() {
+        World world = new World();
+        VoxelChunkData data = VoxelChunkData.empty();
+        data.set(2, 60, 2, WorldConstants.BLOCK_STONE);
+        spawnChunk(world, data);
+        Entity player = spawnPlayer(world);
+        BlockInteractionSystem system = new BlockInteractionSystem();
+
+        setPlacing(world, player, true);
+        system.update(world, DT); // places at (2,60,3)
+        system.update(world, DT); // button still held -> edge-trigger blocks a second placement
+
+        assertEquals(WorldConstants.BLOCK_STONE, data.get(2, 60, 3));
+        assertEquals(WorldConstants.BLOCK_AIR,   data.get(2, 60, 4));
+    }
+
+    private static void place(World world, Entity player, BlockInteractionSystem system) {
+        setPlacing(world, player, true);
+        system.update(world, DT);
+        setPlacing(world, player, false);
+        system.update(world, DT);
+    }
+
+    private static void setPlacing(World world, Entity player, boolean placing) {
+        world.add(player, new PlayerInput(false, false, false, false, false, false, 0f, 0f, false, placing));
+    }
+
+    private static void aimStraightDown(World world, Entity player) {
+        world.add(player, new Rotation(0f, -90f));
+    }
+
     private static void click(World world, Entity player, BlockInteractionSystem system) {
         setBreaking(world, player, true);
         system.update(world, DT);
@@ -137,7 +221,7 @@ class BlockInteractionSystemTest {
     }
 
     private static void setBreaking(World world, Entity player, boolean breaking) {
-        world.add(player, new PlayerInput(false, false, false, false, false, false, 0f, 0f, breaking));
+        world.add(player, new PlayerInput(false, false, false, false, false, false, 0f, 0f, breaking, false));
     }
 
     private static void aimX(World world, Entity player, float x) {
@@ -157,8 +241,9 @@ class BlockInteractionSystemTest {
         float eyeOffset = WorldConstants.PLAYER_EYE_HEIGHT;
         world.add(player, new Position(2.5f, 60.5f - eyeOffset, 6.5f));
         world.add(player, new Rotation(0f, 0f)); // looking straight along -z
+        world.add(player, new ColliderAABB(0.6f, 1.8f, 0.6f));
         world.add(player, new CameraComponent(70f, 0.1f, 1000f));
-        world.add(player, new PlayerInput(false, false, false, false, false, false, 0f, 0f, false));
+        world.add(player, new PlayerInput(false, false, false, false, false, false, 0f, 0f, false, false));
         return player;
     }
 }
