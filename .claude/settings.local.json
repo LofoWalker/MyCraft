@@ -34,7 +34,19 @@
       "Bash(\"C:/Users/tom19/.jdks/openjdk-26.0.1/bin/java.exe\" -cp \"target/classes;/tmp/goldenout\" org.example.systems.Probe)",
       "Bash(git rm *)",
       "PowerShell($repo = \"C:\\\\Users\\\\tom19\\\\IdeaProjects\\\\mycraft\")",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "PowerShell($env:JAVA_HOME = \"C:\\\\Users\\\\tom19\\\\.jdks\\\\openjdk-26.0.1\"; $mvn = \"C:\\\\Program Files\\\\JetBrains\\\\IntelliJ IDEA 2026.1.3\\\\plugins\\\\maven\\\\lib\\\\maven3\\\\bin\\\\mvn.cmd\"; & $mvn -f \"C:\\\\Users\\\\tom19\\\\IdeaProjects\\\\mycraft\\\\pom.xml\" -q test 2>&1 | Select-Object -Last 30)",
+      "Bash(git worktree *)",
+      "Bash(git branch *)",
+      "PowerShell($env:JAVA_HOME = \"C:\\\\Users\\\\tom19\\\\.jdks\\\\openjdk-26.0.1\"; $mvn = \"C:\\\\Program Files\\\\JetBrains\\\\IntelliJ IDEA 2026.1.3\\\\plugins\\\\maven\\\\lib\\\\maven3\\\\bin\\\\mvn.cmd\"; & $mvn -f \"C:\\\\Users\\\\tom19\\\\IdeaProjects\\\\mycraft\\\\.claude\\\\worktrees\\\\agent-a8cc74ba7e204b2f0\\\\pom.xml\" -q test 2>&1 | Select-String -Pattern \"BUILD|Tests run|ERROR|BUILD FAILURE|FAIL\" | Select-Object -Last 25)",
+      "PowerShell($env:JAVA_HOME = \"C:\\\\Users\\\\tom19\\\\.jdks\\\\openjdk-26.0.1\"; $mvn = \"C:\\\\Program Files\\\\JetBrains\\\\IntelliJ IDEA 2026.1.3\\\\plugins\\\\maven\\\\lib\\\\maven3\\\\bin\\\\mvn.cmd\"; & $mvn -f \"C:\\\\Users\\\\tom19\\\\IdeaProjects\\\\mycraft\\\\.claude\\\\worktrees\\\\agent-a8cc74ba7e204b2f0\\\\pom.xml\" test 2>&1 | Select-String -Pattern \"Tests run:|BUILD SUCCESS|BUILD FAILURE\"; \"EXIT=$LASTEXITCODE\")",
+      "Bash(git cherry-pick *)",
+      "PowerShell($env:JAVA_HOME = \"C:\\\\Users\\\\tom19\\\\.jdks\\\\openjdk-26.0.1\"; $mvn = \"C:\\\\Program Files\\\\JetBrains\\\\IntelliJ IDEA 2026.1.3\\\\plugins\\\\maven\\\\lib\\\\maven3\\\\bin\\\\mvn.cmd\"; & $mvn -f \"C:\\\\Users\\\\tom19\\\\IdeaProjects\\\\mycraft\\\\.claude\\\\worktrees\\\\step-14\\\\pom.xml\" test 2>&1 | Select-String -Pattern \"Tests run:|BUILD SUCCESS|BUILD FAILURE|ERROR\\\\]\" | Select-Object -Last 15; \"EXIT=$LASTEXITCODE\")",
+      "PowerShell($env:JAVA_HOME = \"C:\\\\Users\\\\tom19\\\\.jdks\\\\openjdk-26.0.1\"; $mvn = \"C:\\\\Program Files\\\\JetBrains\\\\IntelliJ IDEA 2026.1.3\\\\plugins\\\\maven\\\\lib\\\\maven3\\\\bin\\\\mvn.cmd\"; & $mvn -f \"C:\\\\Users\\\\tom19\\\\IdeaProjects\\\\mycraft\\\\.claude\\\\worktrees\\\\step-15\\\\pom.xml\" test 2>&1 | Select-String -Pattern \"Tests run: \\\\d+, Fail|BUILD SUCCESS|BUILD FAILURE|ERROR\\\\]\" | Select-Object -Last 12; \"EXIT=$LASTEXITCODE\")",
+      "Bash(git -c core.editor=true cherry-pick --continue)",
+      "Bash(git stash *)",
+      "PowerShell($env:JAVA_HOME = \"C:\\\\Users\\\\tom19\\\\.jdks\\\\openjdk-26.0.1\"; $mvn = \"C:\\\\Program Files\\\\JetBrains\\\\IntelliJ IDEA 2026.1.3\\\\plugins\\\\maven\\\\lib\\\\maven3\\\\bin\\\\mvn.cmd\"; & $mvn -f \"C:\\\\Users\\\\tom19\\\\IdeaProjects\\\\mycraft\\\\.claude\\\\worktrees\\\\step-24\\\\pom.xml\" test 2>&1 | Select-String -Pattern \"Tests run:|FAIL|ERROR|expected|cannot find|\\\\.java:\" | Select-Object -Last 25)",
+      "PowerShell($env:JAVA_HOME = \"C:\\\\Users\\\\tom19\\\\.jdks\\\\openjdk-26.0.1\"; $mvn = \"C:\\\\Program Files\\\\JetBrains\\\\IntelliJ IDEA 2026.1.3\\\\plugins\\\\maven\\\\lib\\\\maven3\\\\bin\\\\mvn.cmd\"; & $mvn -f \"C:\\\\Users\\\\tom19\\\\IdeaProjects\\\\mycraft\\\\.claude\\\\worktrees\\\\step-25\\\\pom.xml\" test 2>&1 | Select-String -Pattern \"Tests run: \\\\d+, Fail|FAILURE!|expected|<<< \" | Select-Object -Last 20; \"EXIT=$LASTEXITCODE\")"
     ]
   }
 }

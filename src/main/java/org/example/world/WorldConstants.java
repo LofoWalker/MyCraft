@@ -100,7 +100,7 @@ public final class WorldConstants {
     public static final float PLAYER_EYE_HEIGHT = 1.6f;
     // Vertical margin (in blocks) above the surface where the player spawns, so they drop onto solid
     // ground instead of clipping into it or spawning inside terrain.
-    public static final float PLAYER_SPAWN_CLEARANCE = 2.0f;
+    public static final float PLAYER_SPAWN_CLEARANCE = 200.0f;
     // How far (in blocks) the player can reach to break a block, measured from the eye.
     public static final float PLAYER_REACH      = 5.0f;
     // Damage dealt per hit with bare hands. Tools will later raise this (or the per-block rate).
