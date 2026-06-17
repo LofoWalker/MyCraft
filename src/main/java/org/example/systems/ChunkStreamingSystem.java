@@ -35,7 +35,7 @@ public final class ChunkStreamingSystem implements GameSystem, AutoCloseable {
     private final Map<Integer, Mesh> meshes         = new HashMap<>();
 
     public ChunkStreamingSystem(long seed) {
-        this.generation = GenerationPipeline.flat(seed);
+        this.generation = GenerationPipeline.overworld(seed);
     }
 
     @Override

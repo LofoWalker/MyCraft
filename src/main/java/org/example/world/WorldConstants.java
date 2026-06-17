@@ -30,8 +30,9 @@ public final class WorldConstants {
     public static final int DIAMOND_MAX_LEVEL  = 16;
     public static final int ORE_MIN_LEVEL      = 1;
 
-    // Temporary placeholder world: a flat plain at this altitude while real terrain generation is
-    // on hold. Stone fills the column below; the surface is randomly capped (see FlatTerrainStage).
+    // Debug-only flat world: a flat plain at this altitude, used by GenerationPipeline.flat() which
+    // is off the default path (the live world uses overworld()). Stone fills the column below; the
+    // surface is randomly capped (see FlatTerrainStage). Also caps OreStage's underground scan.
     public static final int   FLAT_SURFACE_LEVEL  = 60;
 
     public static final long  WORLD_SEED          = 42L;
@@ -78,6 +79,9 @@ public final class WorldConstants {
     public static final float TERMINAL_VELOCITY = -50.0f;
     public static final float JUMP_IMPULSE      = 8.0f;
     public static final float PLAYER_EYE_HEIGHT = 1.6f;
+    // Vertical margin (in blocks) above the surface where the player spawns, so they drop onto solid
+    // ground instead of clipping into it or spawning inside terrain.
+    public static final float PLAYER_SPAWN_CLEARANCE = 2.0f;
     // How far (in blocks) the player can reach to break a block, measured from the eye.
     public static final float PLAYER_REACH      = 5.0f;
     // Damage dealt per hit with bare hands. Tools will later raise this (or the per-block rate).

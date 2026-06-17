@@ -28,12 +28,13 @@ public final class GenerationPipeline {
         return new GenerationPipeline(List.of(
                 new TerrainStage(shape),
                 new CaveStage(seed),
+                new OreStage(seed),
                 new WaterSettleStage(),
                 new TreeStage(shape, seed, WorldConstants.BLOCK_GRASS)));
     }
 
-    // Temporary placeholder world (real terrain generation is on hold): a flat plain capped with a
-    // random mix of dirt, stone and water, plus trees scattered over the dirt.
+    // Debug-only flat world (kept off the default path): a flat plain capped with a random mix of
+    // dirt, stone and water, plus trees scattered over the dirt. The live world uses overworld().
     public static GenerationPipeline flat(long seed) {
         SurfaceHeights flatSurface = (worldX, worldZ) -> WorldConstants.FLAT_SURFACE_LEVEL;
         return new GenerationPipeline(List.of(
