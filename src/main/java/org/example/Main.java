@@ -50,7 +50,8 @@ public class Main {
              ChunkStreamingSystem chunkStreaming = new ChunkStreamingSystem(seed);
              SkySystem sky = new SkySystem();
              BlockHighlightSystem blockHighlight = new BlockHighlightSystem();
-             BlockBreakOverlaySystem breakOverlay = new BlockBreakOverlaySystem()) {
+             BlockBreakOverlaySystem breakOverlay = new BlockBreakOverlaySystem();
+             ItemRenderSystem itemRender = new ItemRenderSystem()) {
 
             simScheduler.add(new InputSystem(window));
             simScheduler.add(new HotbarSelectionSystem());
@@ -58,7 +59,9 @@ public class Main {
             simScheduler.add(new FlightControlSystem());
             simScheduler.add(new PhysicsSystem());
             simScheduler.add(new MovementSystem());
+            simScheduler.add(new ItemMotionSystem());
             simScheduler.add(new CollisionSystem());
+            simScheduler.add(new ItemPickupSystem());
 
             renderScheduler.add(new CameraSystem(window.getAspectRatio()));
             renderScheduler.add(sky);
@@ -66,6 +69,7 @@ public class Main {
             renderScheduler.add(new RenderSystem(shader));
             renderScheduler.add(blockHighlight);
             renderScheduler.add(breakOverlay);
+            renderScheduler.add(itemRender);
 
             GameLoop.run(window, world, simScheduler, renderScheduler);
         }

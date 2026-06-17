@@ -140,9 +140,11 @@ public final class BlockInteractionSystem implements GameSystem {
 
     private void damageBlock(World world, Entity player, int wx, int wy, int wz, ChunkVoxelWriter writer) {
         int damage = accumulatedDamage(world, player, wx, wy, wz);
-        int hardness = BlockType.byId(writer.blockAt(wx, wy, wz)).hardness();
+        byte broken = writer.blockAt(wx, wy, wz);
+        int hardness = BlockType.byId(broken).hardness();
         if (damage >= hardness) {
             writer.write(world, wx, wy, wz, WorldConstants.BLOCK_AIR);
+            ItemDrops.spawn(world, wx, wy, wz, broken);
             world.remove(player, BlockBreakProgress.class);
         } else {
             world.add(player, new BlockBreakProgress(wx, wy, wz, damage));

@@ -100,4 +100,20 @@ public final class WorldConstants {
 
     // Sentinel for PlayerInput.hotbarSelect when no number key (1..9) was pressed this tick.
     public static final int NO_HOTBAR_SELECT = -1;
+
+    // Dropped items (STEP-18). A broken block spawns a small physics entity at the block centre that
+    // the player walks into to collect. The collider is a small cube; the spawn impulse gives it a
+    // little hop and scatter so multiple drops do not stack on the exact same spot.
+    public static final float ITEM_COLLIDER_SIZE   = 0.25f;
+    public static final float ITEM_SPAWN_POP_SPEED  = 4.0f;
+    public static final float ITEM_SPAWN_SCATTER    = 1.5f;
+    // How close (centre to centre) the player must come before a drop is collected.
+    public static final float ITEM_PICKUP_RADIUS    = 1.5f;
+    // Grace period before a fresh drop becomes collectable, so it is not grabbed the instant it spawns.
+    public static final float ITEM_PICKUP_DELAY      = 0.5f;
+    // Visual edge length of the rendered drop cube (the test cube mesh is one unit wide).
+    public static final float ITEM_RENDER_SCALE      = 0.3f;
+    // Fraction of horizontal speed shed each tick once a drop rests on the ground (0 = frictionless,
+    // 1 = stops instantly), so the spawn scatter dies out instead of sliding forever.
+    public static final float ITEM_GROUND_FRICTION   = 0.3f;
 }
