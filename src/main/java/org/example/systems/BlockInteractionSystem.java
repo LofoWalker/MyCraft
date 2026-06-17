@@ -3,6 +3,9 @@ package org.example.systems;
 import org.example.components.BlockBreakProgress;
 import org.example.components.CameraComponent;
 import org.example.components.ColliderAABB;
+import org.example.components.Hotbar;
+import org.example.components.Inventory;
+import org.example.components.ItemStack;
 import org.example.components.PlayerInput;
 import org.example.components.Position;
 import org.example.components.Rotation;
@@ -14,6 +17,7 @@ import org.example.ecs.World;
 import org.example.world.AABBCell;
 import org.example.world.BlockType;
 import org.example.world.ChunkView;
+import org.example.world.Inventories;
 import org.example.world.VoxelRaycast;
 import org.example.world.WorldConstants;
 
@@ -78,13 +82,18 @@ public final class BlockInteractionSystem implements GameSystem {
         placeHeldPreviously = placeNow;
         if (!justPressed || hit.isEmpty()) return;
 
+        int activeSlot = activeHotbarSlot(world, player);
+        ItemStack held = heldStack(world, player, activeSlot);
+        if (held.isEmpty()) return; // empty slot -> nothing to place
+
         VoxelRaycast.RaycastHit h = hit.get();
         int cx = h.x() + h.faceX();
         int cy = h.y() + h.faceY();
         int cz = h.z() + h.faceZ();
         if (!canPlaceAt(world, player, cx, cy, cz, writer)) return;
 
-        writer.write(world, cx, cy, cz, selectedBlock(world, player));
+        writer.write(world, cx, cy, cz, (byte) held.itemId());
+        consumeOne(world, player, activeSlot);
     }
 
     private static boolean canPlaceAt(World world, Entity player, int cx, int cy, int cz,
@@ -95,9 +104,21 @@ public final class BlockInteractionSystem implements GameSystem {
         return !AABBCell.playerOverlapsCell(pos, box, cx, cy, cz);
     }
 
-    // Hook for STEP-16's hotbar: the placed block id will come from the player's selected slot.
-    private static byte selectedBlock(World world, Entity player) {
-        return WorldConstants.BLOCK_STONE;
+    // The item in the active hotbar slot is what gets placed. Without an Inventory/Hotbar the player
+    // holds nothing (ItemStack.EMPTY), so placement becomes a no-op.
+    private static ItemStack heldStack(World world, Entity player, int activeSlot) {
+        return world.get(player, Inventory.class)
+                .map(inv -> Inventories.get(inv, activeSlot))
+                .orElse(ItemStack.EMPTY);
+    }
+
+    private static int activeHotbarSlot(World world, Entity player) {
+        return world.get(player, Hotbar.class).map(Hotbar::selectedSlot).orElse(0);
+    }
+
+    private static void consumeOne(World world, Entity player, int activeSlot) {
+        world.get(player, Inventory.class)
+                .ifPresent(inv -> world.add(player, Inventories.removeOne(inv, activeSlot)));
     }
 
     private static Optional<VoxelRaycast.RaycastHit> castFromEye(Position pos, Rotation rot,

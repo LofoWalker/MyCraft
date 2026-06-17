@@ -3,6 +3,7 @@ package org.example.systems;
 import org.example.components.PlayerInput;
 import org.example.ecs.Entity;
 import org.example.ecs.World;
+import org.example.world.WorldConstants;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -22,7 +23,8 @@ class InputSystemTest {
     void setUp() {
         world  = new World();
         player = world.create();
-        world.add(player, new PlayerInput(false, false, false, false, false, false, 0f, 0f, false, false));
+        world.add(player, new PlayerInput(false, false, false, false, false, false, 0f, 0f, false, false,
+                0, WorldConstants.NO_HOTBAR_SELECT));
     }
 
     /** Build an InputSystem where only the given GLFW key codes are considered pressed. */
@@ -113,6 +115,42 @@ class InputSystemTest {
         PlayerInput input = world.get(player, PlayerInput.class).orElseThrow();
         assertEquals(0f, input.mouseDeltaX(), 1e-5f);
         assertEquals(0f, input.mouseDeltaY(), 1e-5f);
+    }
+
+    @Test
+    void scrollAccumulatesIntoScrollDelta() {
+        InputSystem sys = buildSystem();
+        sys.accumulateScroll(2);
+        sys.update(world, 0.016f);
+        assertEquals(2, world.get(player, PlayerInput.class).orElseThrow().scrollDelta());
+    }
+
+    @Test
+    void scrollResetAfterFirstRead() {
+        InputSystem sys = buildSystem();
+        sys.accumulateScroll(3);
+        sys.update(world, 0.016f);
+        sys.update(world, 0.016f);
+        assertEquals(0, world.get(player, PlayerInput.class).orElseThrow().scrollDelta());
+    }
+
+    @Test
+    void noNumberKeyLeavesHotbarSelectAtSentinel() {
+        buildSystem().update(world, 0.016f);
+        assertEquals(WorldConstants.NO_HOTBAR_SELECT,
+                world.get(player, PlayerInput.class).orElseThrow().hotbarSelect());
+    }
+
+    @Test
+    void numberKeyOneSelectsSlotZero() {
+        buildSystem(GLFW_KEY_1).update(world, 0.016f);
+        assertEquals(0, world.get(player, PlayerInput.class).orElseThrow().hotbarSelect());
+    }
+
+    @Test
+    void numberKeyNineSelectsSlotEight() {
+        buildSystem(GLFW_KEY_9).update(world, 0.016f);
+        assertEquals(8, world.get(player, PlayerInput.class).orElseThrow().hotbarSelect());
     }
 
     @Test

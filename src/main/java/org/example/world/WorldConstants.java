@@ -89,4 +89,15 @@ public final class WorldConstants {
 
     public static final float FLY_VERTICAL_SPEED        = 20.0f;
     public static final float DOUBLE_TAP_WINDOW_SECONDS = 0.3f;
+
+    // Inventory: a fixed grid of HOTBAR_SLOTS quick-access slots followed by BACKPACK_SLOTS storage.
+    // The hotbar occupies the first HOTBAR_SLOTS entries of the slot array. A single stack holds at
+    // most MAX_STACK items of one kind.
+    public static final int MAX_STACK      = 64;
+    public static final int HOTBAR_SLOTS   = 9;
+    public static final int BACKPACK_SLOTS = 27;
+    public static final int INVENTORY_SLOTS = HOTBAR_SLOTS + BACKPACK_SLOTS;
+
+    // Sentinel for PlayerInput.hotbarSelect when no number key (1..9) was pressed this tick.
+    public static final int NO_HOTBAR_SELECT = -1;
 }

@@ -6,6 +6,7 @@ import org.example.ecs.SystemScheduler;
 import org.example.ecs.World;
 import org.example.render.Shader;
 import org.example.systems.*;
+import org.example.world.Inventories;
 import org.example.world.WorldConstants;
 import org.example.worldgen.TerrainShape;
 
@@ -38,7 +39,10 @@ public class Main {
         world.add(player, new Gravity(WorldConstants.GRAVITY));
         world.add(player, new ColliderAABB(0.6f, 1.8f, 0.6f));
         world.add(player, new CameraComponent(70f, 0.1f, 1000f));
-        world.add(player, new PlayerInput(false, false, false, false, false, false, 0f, 0f, false, false));
+        world.add(player, new PlayerInput(false, false, false, false, false, false, 0f, 0f, false, false,
+                0, WorldConstants.NO_HOTBAR_SELECT));
+        world.add(player, new Hotbar(0));
+        world.add(player, startingInventory());
 
         window.captureCursor();
 
@@ -49,6 +53,7 @@ public class Main {
              BlockBreakOverlaySystem breakOverlay = new BlockBreakOverlaySystem()) {
 
             simScheduler.add(new InputSystem(window));
+            simScheduler.add(new HotbarSelectionSystem());
             simScheduler.add(new BlockInteractionSystem());
             simScheduler.add(new FlightControlSystem());
             simScheduler.add(new PhysicsSystem());
@@ -64,6 +69,16 @@ public class Main {
 
             GameLoop.run(window, world, simScheduler, renderScheduler);
         }
+    }
+
+    // A few full stacks of placeable blocks so the player can build straight away. They land in the
+    // first hotbar slots, so slot 0 (the default selection) holds stone.
+    private static Inventory startingInventory() {
+        Inventory inventory = Inventories.empty();
+        inventory = Inventories.add(inventory, new ItemStack(WorldConstants.BLOCK_STONE, WorldConstants.MAX_STACK)).inventory();
+        inventory = Inventories.add(inventory, new ItemStack(WorldConstants.BLOCK_DIRT,  WorldConstants.MAX_STACK)).inventory();
+        inventory = Inventories.add(inventory, new ItemStack(WorldConstants.BLOCK_WOOD,  WorldConstants.MAX_STACK)).inventory();
+        return inventory;
     }
 
     // Drop the player just above the real surface at the spawn column so they land on solid ground

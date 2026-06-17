@@ -5,6 +5,9 @@ import org.example.components.CameraComponent;
 import org.example.components.ColliderAABB;
 import org.example.components.ChunkComponent;
 import org.example.components.ChunkDirty;
+import org.example.components.Hotbar;
+import org.example.components.Inventory;
+import org.example.components.ItemStack;
 import org.example.components.PlayerInput;
 import org.example.components.Position;
 import org.example.components.Rotation;
@@ -13,6 +16,7 @@ import org.example.components.VoxelChunkData;
 import org.example.ecs.Entity;
 import org.example.ecs.World;
 import org.example.world.BlockType;
+import org.example.world.Inventories;
 import org.example.world.WorldConstants;
 import org.junit.jupiter.api.Test;
 
@@ -206,7 +210,8 @@ class BlockInteractionSystemTest {
     }
 
     private static void setPlacing(World world, Entity player, boolean placing) {
-        world.add(player, new PlayerInput(false, false, false, false, false, false, 0f, 0f, false, placing));
+        world.add(player, new PlayerInput(false, false, false, false, false, false, 0f, 0f, false, placing,
+                0, WorldConstants.NO_HOTBAR_SELECT));
     }
 
     private static void aimStraightDown(World world, Entity player) {
@@ -221,7 +226,8 @@ class BlockInteractionSystemTest {
     }
 
     private static void setBreaking(World world, Entity player, boolean breaking) {
-        world.add(player, new PlayerInput(false, false, false, false, false, false, 0f, 0f, breaking, false));
+        world.add(player, new PlayerInput(false, false, false, false, false, false, 0f, 0f, breaking, false,
+                0, WorldConstants.NO_HOTBAR_SELECT));
     }
 
     private static void aimX(World world, Entity player, float x) {
@@ -243,7 +249,12 @@ class BlockInteractionSystemTest {
         world.add(player, new Rotation(0f, 0f)); // looking straight along -z
         world.add(player, new ColliderAABB(0.6f, 1.8f, 0.6f));
         world.add(player, new CameraComponent(70f, 0.1f, 1000f));
-        world.add(player, new PlayerInput(false, false, false, false, false, false, 0f, 0f, false, false));
+        world.add(player, new PlayerInput(false, false, false, false, false, false, 0f, 0f, false, false,
+                0, WorldConstants.NO_HOTBAR_SELECT));
+        world.add(player, new Hotbar(0));
+        Inventory inventory = Inventories.add(Inventories.empty(),
+                new ItemStack(WorldConstants.BLOCK_STONE, WorldConstants.MAX_STACK)).inventory();
+        world.add(player, inventory);
         return player;
     }
 }

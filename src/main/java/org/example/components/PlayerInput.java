@@ -10,5 +10,7 @@ public record PlayerInput(
         float mouseDeltaX,
         float mouseDeltaY,
         boolean breakBlock,
-        boolean placeBlock
+        boolean placeBlock,
+        int scrollDelta,
+        int hotbarSelect
 ) {}
