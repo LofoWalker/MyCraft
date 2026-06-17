@@ -284,6 +284,82 @@ class ChunkMeshingSystemTest {
         return (byte) (level << 4);
     }
 
+    // --- STEP-22: per-vertex ambient occlusion + quad flip ------------------------------------
+
+    @Test
+    void boxedCornerVertexIsDarkenedByAmbientOcclusion() {
+        VoxelChunkData data = VoxelChunkData.empty();
+        data.set(1, 1, 1, WorldConstants.BLOCK_STONE);
+        // Two solid blocks meeting at the top face's v0 corner (side1 and side2 both solid → AO 0).
+        data.set(0, 2, 1, WorldConstants.BLOCK_STONE); // side1 of top-face v0
+        data.set(1, 2, 2, WorldConstants.BLOCK_STONE); // side2 of top-face v0
+
+        float[] v = ChunkMeshingSystem.buildGeometry(data,
+                LightEngine.computeLight(data)).opaque().vertices();
+
+        float minLight = Float.MAX_VALUE, maxLight = -Float.MAX_VALUE;
+        for (int vtx = 0; vtx < VERTICES_PER_FACE; vtx++) {
+            float l = v[FACE_TOP * VERTICES_PER_FACE * FLOATS_PER_VERTEX
+                    + vtx * FLOATS_PER_VERTEX + LIGHT_OFFSET];
+            minLight = Math.min(minLight, l);
+            maxLight = Math.max(maxLight, l);
+        }
+        // Open-sky face (faceLight 1.0): darkest vertex = AO level 0 factor; an open vertex = 1.0.
+        assertEquals(0.5f, minLight, 1e-6f, "Boxed corner must take the darkest AO factor");
+        assertEquals(1.0f, maxLight, 1e-6f, "An open corner of the same face stays fully lit");
+    }
+
+    @Test
+    void openFaceWithNoSolidNeighboursIsUnchangedByAmbientOcclusion() {
+        VoxelChunkData data = VoxelChunkData.empty();
+        data.set(0, 0, 0, WorldConstants.BLOCK_STONE);
+
+        float[] v = ChunkMeshingSystem.buildGeometry(data,
+                LightEngine.computeLight(data)).opaque().vertices();
+
+        for (int vtx = 0; vtx < VERTICES_PER_FACE; vtx++) {
+            float l = v[FACE_TOP * VERTICES_PER_FACE * FLOATS_PER_VERTEX
+                    + vtx * FLOATS_PER_VERTEX + LIGHT_OFFSET];
+            assertEquals(1.0f, l, 1e-6f, "Open-sky face with no occluders stays fully lit (AO 1.0)");
+        }
+    }
+
+    @Test
+    void imbalancedAoFaceFlipsTriangulationDiagonal() {
+        VoxelChunkData data = VoxelChunkData.empty();
+        data.set(1, 1, 1, WorldConstants.BLOCK_STONE);
+        // Occlude the top face's v1 and v3 diagonal-corner cells only (each lowers one vertex's AO),
+        // leaving v0/v2 fully open → ao0+ao2 > ao1+ao3 → diagonal must rotate to v1–v3.
+        data.set(2, 2, 2, WorldConstants.BLOCK_STONE); // v1 corner
+        data.set(0, 2, 0, WorldConstants.BLOCK_STONE); // v3 corner
+
+        int[] idx = ChunkMeshingSystem.buildGeometry(data,
+                LightEngine.computeLight(data)).opaque().indices();
+
+        int base = FACE_TOP * VERTICES_PER_FACE;       // first vertex id of the top face
+        int start = FACE_TOP * INDICES_PER_FACE;       // its 6 indices in face order
+        int[] flipped = { base + 1, base + 2, base + 3, base + 3, base, base + 1 };
+        for (int i = 0; i < INDICES_PER_FACE; i++) {
+            assertEquals(flipped[i], idx[start + i], "Flipped diagonal index pattern at " + i);
+        }
+    }
+
+    @Test
+    void balancedAoFaceKeepsDefaultDiagonal() {
+        VoxelChunkData data = VoxelChunkData.empty();
+        data.set(0, 0, 0, WorldConstants.BLOCK_STONE); // isolated: all AO levels equal → no flip
+
+        int[] idx = ChunkMeshingSystem.buildGeometry(data,
+                LightEngine.computeLight(data)).opaque().indices();
+
+        int base = FACE_TOP * VERTICES_PER_FACE;
+        int start = FACE_TOP * INDICES_PER_FACE;
+        int[] standard = { base, base + 1, base + 2, base + 2, base + 3, base };
+        for (int i = 0; i < INDICES_PER_FACE; i++) {
+            assertEquals(standard[i], idx[start + i], "Default diagonal index pattern at " + i);
+        }
+    }
+
     @Test
     void waterSubmergedUnderAnotherWaterCellHasNoTopFace() {
         VoxelChunkData data = VoxelChunkData.empty();

@@ -9,6 +9,7 @@ import org.example.ecs.GameSystem;
 import org.example.ecs.World;
 import org.example.render.Mesh;
 import org.example.render.TextureAtlas;
+import org.example.world.AmbientOcclusion;
 import org.example.world.BlockType;
 import org.example.world.LightEngine;
 import org.example.world.WorldConstants;
@@ -38,6 +39,26 @@ public final class ChunkMeshingSystem implements GameSystem, AutoCloseable {
         { 1,  0,  0}, // Right  (x+)
         {-1,  0,  0}, // Left   (x-)
     };
+
+    // Face plane basis (normal, in-plane axes u and v), same face order as FACE_OFFSETS. Used to
+    // derive the AO corner-neighbour offsets; a vertex at the high end of an axis (coord 1) reaches
+    // toward +axis, at the low end (coord 0) toward -axis.
+    private static final int[][] FACE_NORMAL = {
+        { 0, 0, 1}, { 0, 0,-1}, { 0, 1, 0}, { 0,-1, 0}, { 1, 0, 0}, {-1, 0, 0},
+    };
+    private static final int[][] FACE_AXIS_U = {
+        { 1, 0, 0}, { 1, 0, 0}, { 1, 0, 0}, { 1, 0, 0}, { 0, 0, 1}, { 0, 0, 1},
+    };
+    private static final int[][] FACE_AXIS_V = {
+        { 0, 1, 0}, { 0, 1, 0}, { 0, 0, 1}, { 0, 0, 1}, { 0, 1, 0}, { 0, 1, 0},
+    };
+
+    private static final int VERTICES_PER_FACE = 4;
+    private static final int AO_INTS_PER_VERTEX = 9;
+
+    // AO corner-neighbour offsets relative to the block: [face][vertex] -> 9 ints
+    // {side1(dx,dy,dz), side2(dx,dy,dz), corner(dx,dy,dz)}, all on the exposed (normal) side.
+    private static final int[][][] FACE_VERTEX_AO_OFFSETS = buildAoOffsets();
 
     private static final int FACE_TOP          = 2;
     private static final int FACE_BOTTOM       = 3;
@@ -122,8 +143,8 @@ public final class ChunkMeshingSystem implements GameSystem, AutoCloseable {
             int nz = z + FACE_NEIGHBOR[face][2];
             if (isAirOrOutOfBounds(data, nx, ny, nz)) {
                 BlockType type = BlockType.byId(block);
-                builder.addFace(x, y, z, face, blockFaceUv(type, face), type.tint(), FULL_TOP,
-                        faceLight(light, nx, ny, nz));
+                computeVertexLight(data, x, y, z, face, faceLight(light, nx, ny, nz), builder);
+                builder.addFace(x, y, z, face, blockFaceUv(type, face), type.tint(), FULL_TOP);
             }
         }
     }
@@ -139,7 +160,8 @@ public final class ChunkMeshingSystem implements GameSystem, AutoCloseable {
             int ny = y + FACE_NEIGHBOR[face][1];
             int nz = z + FACE_NEIGHBOR[face][2];
             if (!isWater(data, nx, ny, nz)) {
-                builder.addFace(x, y, z, face, uv, tint, WATER_TOP, faceLight(light, nx, ny, nz));
+                computeVertexLight(data, x, y, z, face, faceLight(light, nx, ny, nz), builder);
+                builder.addFace(x, y, z, face, uv, tint, WATER_TOP);
             }
         }
     }
@@ -153,6 +175,57 @@ public final class ChunkMeshingSystem implements GameSystem, AutoCloseable {
         }
         int idx = nx + nz * SX + ny * SX * SX;
         return LightEngine.effectiveLevel(light[idx]) / LIGHT_NORMALIZER;
+    }
+
+    // Builds, once at class load, the AO corner-neighbour offsets for every face/vertex from the
+    // face plane basis. Pure setup — keeps the meshing hot loop a plain table read with no math.
+    private static int[][][] buildAoOffsets() {
+        int[][][] table = new int[FACE_OFFSETS.length][VERTICES_PER_FACE][AO_INTS_PER_VERTEX];
+        for (int face = 0; face < FACE_OFFSETS.length; face++)
+            for (int v = 0; v < VERTICES_PER_FACE; v++)
+                table[face][v] = cornerOffsets(face, v);
+        return table;
+    }
+
+    private static int[] cornerOffsets(int face, int v) {
+        int[] n = FACE_NORMAL[face], u = FACE_AXIS_U[face], w = FACE_AXIS_V[face];
+        int su = axisSign(face, v, u);
+        int sv = axisSign(face, v, w);
+        int[] side1  = add(n, scale(u, su));
+        int[] side2  = add(n, scale(w, sv));
+        int[] corner = add(side1, scale(w, sv));
+        return new int[]{ side1[0], side1[1], side1[2], side2[0], side2[1], side2[2],
+                          corner[0], corner[1], corner[2] };
+    }
+
+    // +1 if the vertex sits at the high end of the axis (coord 1, reaches toward +axis), else -1.
+    private static int axisSign(int face, int v, int[] axis) {
+        float[] off = FACE_OFFSETS[face];
+        int k = axis[0] != 0 ? 0 : (axis[1] != 0 ? 1 : 2);
+        return off[v * 3 + k] == 1f ? 1 : -1;
+    }
+
+    private static int[] scale(int[] a, int s) { return new int[]{ a[0] * s, a[1] * s, a[2] * s }; }
+    private static int[] add(int[] a, int[] b) { return new int[]{ a[0] + b[0], a[1] + b[1], a[2] + b[2] }; }
+
+    // Combined per-vertex brightness = face light (STEP-21) * AO factor, written into the SAME light
+    // attribute. Out-of-bounds neighbours are not solid (no occlusion), matching isAirOrOutOfBounds.
+    private static void computeVertexLight(VoxelChunkData data, int bx, int by, int bz, int face,
+                                           float faceLight, MeshBuilder builder) {
+        int[] levels = builder.aoLevels;
+        for (int v = 0; v < VERTICES_PER_FACE; v++) {
+            int[] o = FACE_VERTEX_AO_OFFSETS[face][v];
+            boolean side1  = isSolid(data, bx + o[0], by + o[1], bz + o[2]);
+            boolean side2  = isSolid(data, bx + o[3], by + o[4], bz + o[5]);
+            boolean corner = isSolid(data, bx + o[6], by + o[7], bz + o[8]);
+            levels[v] = AmbientOcclusion.cornerLevel(side1, side2, corner);
+            builder.vertexLight[v] = faceLight * AmbientOcclusion.factor(levels[v]);
+        }
+        builder.flipQuad = AmbientOcclusion.shouldFlip(levels[0], levels[1], levels[2], levels[3]);
+    }
+
+    private static boolean isSolid(VoxelChunkData data, int x, int y, int z) {
+        return !isAirOrOutOfBounds(data, x, y, z) && BlockType.byId(data.get(x, y, z)).solid();
     }
 
     private static boolean isAirOrOutOfBounds(VoxelChunkData data, int x, int y, int z) {
@@ -202,14 +275,20 @@ public final class ChunkMeshingSystem implements GameSystem, AutoCloseable {
         private int vOffset = 0;
         private int iOffset = 0;
 
+        // Reused per-face scratch (zero alloc in the loop): combined light*AO brightness per vertex,
+        // raw AO levels (for the flip decision), and whether the diagonal must be rotated.
+        final float[] vertexLight = new float[VERTICES_PER_FACE];
+        final int[]   aoLevels    = new int[VERTICES_PER_FACE];
+        boolean flipQuad = false;
+
         // topY replaces the y=1 vertices' height so water can sit below the cell ceiling; solid
-        // blocks pass topY = 1.0 and are unaffected. light is the normalized 0..1 brightness of the
-        // neighbour air cell, written identically to all four vertices (flat per-face shading).
-        void addFace(int bx, int by, int bz, int face, float[] uv, float[] tint, float topY, float light) {
+        // blocks pass topY = 1.0 and are unaffected. Each vertex carries its own light*AO brightness
+        // from the vertexLight scratch, giving smooth-shaded occluded corners.
+        void addFace(int bx, int by, int bz, int face, float[] uv, float[] tint, float topY) {
             ensureCapacity();
             float[] off = FACE_OFFSETS[face];
             int baseVertex = vOffset / FLOATS_PER_VERTEX;
-            for (int v = 0; v < 4; v++) {
+            for (int v = 0; v < VERTICES_PER_FACE; v++) {
                 float yOff = off[v * 3 + 1];
                 vertices[vOffset++] = bx + off[v * 3];
                 vertices[vOffset++] = by + (yOff == TOP_Y_OFFSET ? topY : yOff);
@@ -219,14 +298,30 @@ public final class ChunkMeshingSystem implements GameSystem, AutoCloseable {
                 vertices[vOffset++] = tint[0];
                 vertices[vOffset++] = tint[1];
                 vertices[vOffset++] = tint[2];
-                vertices[vOffset++] = light;
+                vertices[vOffset++] = vertexLight[v];
             }
-            indices[iOffset++] = baseVertex;
-            indices[iOffset++] = baseVertex + 1;
-            indices[iOffset++] = baseVertex + 2;
-            indices[iOffset++] = baseVertex + 2;
-            indices[iOffset++] = baseVertex + 3;
-            indices[iOffset++] = baseVertex;
+            emitIndices(baseVertex);
+        }
+
+        // Two triangles per quad. The default diagonal joins v0–v2; when AO is imbalanced across that
+        // diagonal we rotate it to v1–v3 so the shade gradient stays symmetric (no anisotropy seam).
+        // Both orderings keep CCW winding, so face culling is unaffected.
+        private void emitIndices(int baseVertex) {
+            if (flipQuad) {
+                indices[iOffset++] = baseVertex + 1;
+                indices[iOffset++] = baseVertex + 2;
+                indices[iOffset++] = baseVertex + 3;
+                indices[iOffset++] = baseVertex + 3;
+                indices[iOffset++] = baseVertex;
+                indices[iOffset++] = baseVertex + 1;
+            } else {
+                indices[iOffset++] = baseVertex;
+                indices[iOffset++] = baseVertex + 1;
+                indices[iOffset++] = baseVertex + 2;
+                indices[iOffset++] = baseVertex + 2;
+                indices[iOffset++] = baseVertex + 3;
+                indices[iOffset++] = baseVertex;
+            }
         }
 
         private void ensureCapacity() {
