@@ -24,6 +24,30 @@ public final class WorldConstants {
     public static final byte BLOCK_DIAMOND = 8;
     public static final byte BLOCK_TORCH   = 9;
 
+    // Fluid simulation (STEP-32).
+    // Level encoding: BLOCK_WATER (6) acts as source water (level FLUID_MAX_LEVEL = 8, infinite).
+    // Flowing water levels 7 down to 1 use dedicated block ids 10..16 (BLOCK_WATER_FLOW_BASE + level).
+    // Lava source uses BLOCK_LAVA (17); flowing lava levels 6 down to 1 use ids 18..23
+    // (BLOCK_LAVA_FLOW_BASE + level). BLOCK_OBSIDIAN (24) is produced when water touches a lava source.
+    // This single-byte-per-cell encoding keeps VoxelChunkData data-only with no parallel array.
+    public static final byte BLOCK_WATER_FLOW_BASE = 9;   // ids 10..16 = flowing water level 7..1
+    public static final byte BLOCK_LAVA            = 17;
+    public static final byte BLOCK_LAVA_FLOW_BASE  = 17;  // ids 18..23 = flowing lava level 6..1
+    public static final byte BLOCK_OBSIDIAN        = 24;
+
+    // Fluid levels: source water is FLUID_SOURCE_LEVEL; flowing water and lava decrement from there.
+    // Level 0 is ephemeral and dries up immediately (converted to air at the start of evaluation).
+    public static final int FLUID_SOURCE_LEVEL      = 8;
+    public static final int FLUID_MAX_FLOW_LEVEL    = 7;   // highest flowing (non-source) level
+    public static final int FLUID_MIN_LEVEL         = 1;   // lowest level before drying to air
+
+    // Water ticks every WATER_TICK_INTERVAL simulation ticks; lava ticks less often (heavier fluid).
+    public static final int WATER_TICK_INTERVAL     = 2;
+    public static final int LAVA_TICK_INTERVAL      = 8;
+
+    // Hard cap on fluid cell evaluations per tick to bound worst-case CPU cost.
+    public static final int MAX_FLUID_UPDATES_PER_TICK = 512;
+
     // Lighting (STEP-21). Skylight and blocklight are 4-bit levels packed in one byte per cell; the
     // brightest reachable level is MAX_LIGHT_LEVEL and each block of travel drops the level by one.
     // A torch is the only emitter so far; TORCH_EMISSION is its source level (one below full so its
@@ -202,6 +226,8 @@ public final class WorldConstants {
     // Highest valid block id; an item id above this is a non-block (e.g. food) and must not be placed.
     public static final int MAX_BLOCK_ID = BLOCK_TORCH;
 
-    // TODO(STEP-24): lava contact damage + short i-frames once BLOCK_LAVA and its atlas tile exist.
-    // Out of scope here: no lava block/tile is added, so the HealthSystem only handles fall + drowning.
+    // Lava contact damage: applied by HealthSystem when the player stands in a lava block.
+    // Short i-frames prevent rapid repeated damage; value intentionally higher than drowning.
+    public static final int   LAVA_DAMAGE          = 4;
+    public static final float LAVA_DAMAGE_INTERVAL = 0.5f;
 }

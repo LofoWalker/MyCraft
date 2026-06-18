@@ -18,6 +18,24 @@ public enum BlockType {
     DIAMOND(0.40f, 0.85f, 0.90f, true, 9, Tile.DIAMOND_ORE, Tile.DIAMOND_ORE, Tile.DIAMOND_ORE),
     // A torch is non-solid (light/walk through it) and emits blocklight; it is mined in a single hit.
     TORCH (1.00f, 0.85f, 0.40f, false, 1, WorldConstants.TORCH_EMISSION, Tile.TORCH, Tile.TORCH, Tile.TORCH),
+    // Flowing water levels 7..1 (ids 10..16): non-solid, same atlas tile as static water.
+    WATER_FLOW_7(0.20f, 0.40f, 0.85f, false, 0, Tile.WATER, Tile.WATER, Tile.WATER),
+    WATER_FLOW_6(0.20f, 0.40f, 0.85f, false, 0, Tile.WATER, Tile.WATER, Tile.WATER),
+    WATER_FLOW_5(0.20f, 0.40f, 0.85f, false, 0, Tile.WATER, Tile.WATER, Tile.WATER),
+    WATER_FLOW_4(0.20f, 0.40f, 0.85f, false, 0, Tile.WATER, Tile.WATER, Tile.WATER),
+    WATER_FLOW_3(0.20f, 0.40f, 0.85f, false, 0, Tile.WATER, Tile.WATER, Tile.WATER),
+    WATER_FLOW_2(0.20f, 0.40f, 0.85f, false, 0, Tile.WATER, Tile.WATER, Tile.WATER),
+    WATER_FLOW_1(0.20f, 0.40f, 0.85f, false, 0, Tile.WATER, Tile.WATER, Tile.WATER),
+    // Lava source (id 17) and flowing levels 6..1 (ids 18..23): non-solid, slow-moving fluid.
+    LAVA        (0.95f, 0.40f, 0.05f, false, 0, Tile.LAVA, Tile.LAVA, Tile.LAVA),
+    LAVA_FLOW_6 (0.95f, 0.40f, 0.05f, false, 0, Tile.LAVA, Tile.LAVA, Tile.LAVA),
+    LAVA_FLOW_5 (0.95f, 0.40f, 0.05f, false, 0, Tile.LAVA, Tile.LAVA, Tile.LAVA),
+    LAVA_FLOW_4 (0.95f, 0.40f, 0.05f, false, 0, Tile.LAVA, Tile.LAVA, Tile.LAVA),
+    LAVA_FLOW_3 (0.95f, 0.40f, 0.05f, false, 0, Tile.LAVA, Tile.LAVA, Tile.LAVA),
+    LAVA_FLOW_2 (0.95f, 0.40f, 0.05f, false, 0, Tile.LAVA, Tile.LAVA, Tile.LAVA),
+    LAVA_FLOW_1 (0.95f, 0.40f, 0.05f, false, 0, Tile.LAVA, Tile.LAVA, Tile.LAVA),
+    // Obsidian (id 24): created where lava source meets water; very hard to mine.
+    OBSIDIAN    (0.10f, 0.08f, 0.15f, true,  50, Tile.OBSIDIAN, Tile.OBSIDIAN, Tile.OBSIDIAN),
     UNKNOWN(1.00f, 0.00f, 1.00f, true, 1, Tile.STONE, Tile.STONE, Tile.STONE);
 
     // Linear tile indices into textures/blocks.png (index = tileY*16 + tileX, top-left origin).
@@ -36,6 +54,9 @@ public enum BlockType {
         static final int IRON_ORE    = 9;
         static final int DIAMOND_ORE = 10;
         static final int TORCH       = 11;
+        // Fluid and new blocks (STEP-32).
+        static final int LAVA        = 12;
+        static final int OBSIDIAN    = 13;
     }
 
     private static final int NO_EMISSION = 0;
@@ -96,7 +117,15 @@ public enum BlockType {
     }
 
     // Index order must match the BLOCK_* byte ids in WorldConstants.
-    private static final BlockType[] BY_ID = { AIR, STONE, DIRT, GRASS, WOOD, LEAVES, WATER, IRON, DIAMOND, TORCH };
+    // ids: 0=AIR 1=STONE 2=DIRT 3=GRASS 4=WOOD 5=LEAVES 6=WATER 7=IRON 8=DIAMOND 9=TORCH
+    //      10..16=WATER_FLOW_7..1  17=LAVA  18..23=LAVA_FLOW_6..1  24=OBSIDIAN
+    private static final BlockType[] BY_ID = {
+        AIR, STONE, DIRT, GRASS, WOOD, LEAVES, WATER, IRON, DIAMOND, TORCH,
+        WATER_FLOW_7, WATER_FLOW_6, WATER_FLOW_5, WATER_FLOW_4,
+        WATER_FLOW_3, WATER_FLOW_2, WATER_FLOW_1,
+        LAVA, LAVA_FLOW_6, LAVA_FLOW_5, LAVA_FLOW_4, LAVA_FLOW_3, LAVA_FLOW_2, LAVA_FLOW_1,
+        OBSIDIAN
+    };
 
     public static BlockType byId(byte id) {
         int i = id & 0xFF;
