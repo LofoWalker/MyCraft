@@ -63,6 +63,10 @@ public final class ItemRegistry {
         TABLE[WorldConstants.ITEM_APPLE] = foodEntry(WorldConstants.ITEM_APPLE);
         TABLE[WorldConstants.ITEM_BREAD] = foodEntry(WorldConstants.ITEM_BREAD);
 
+        // Intermediate crafting material: sticks (not a food, not a tool, not a block).
+        TABLE[WorldConstants.ITEM_STICK] = new ItemData(
+                WorldConstants.ITEM_STICK, WorldConstants.MAX_STACK, false, false, ToolKind.NONE, null, 0);
+
         // Tools.
         registerTool(PICKAXE_WOOD,    ToolKind.PICKAXE, ToolMaterial.WOOD,    59);
         registerTool(PICKAXE_STONE,   ToolKind.PICKAXE, ToolMaterial.STONE,   131);

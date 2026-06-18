@@ -69,7 +69,8 @@ public class Main {
              BlockBreakOverlaySystem breakOverlay = new BlockBreakOverlaySystem();
              ItemRenderSystem itemRender = new ItemRenderSystem();
              HudSystem hud = new HudSystem(window);
-             EntityRenderSystem entityRender = new EntityRenderSystem()) {
+             EntityRenderSystem entityRender = new EntityRenderSystem();
+             InventoryScreenSystem inventoryScreen = new InventoryScreenSystem(window)) {
 
             simScheduler.add(new TimeSystem());
             simScheduler.add(new InputSystem(window));
@@ -97,6 +98,8 @@ public class Main {
             renderScheduler.add(itemRender);
             renderScheduler.add(entityRender);
             renderScheduler.add(hud);
+            // Inventory screen overlays everything else; runs last in the render schedule.
+            renderScheduler.add(inventoryScreen);
 
             GameLoop.run(window, world, simScheduler, renderScheduler);
 
@@ -138,7 +141,7 @@ public class Main {
         world.add(player, new ColliderAABB(0.6f, 1.8f, 0.6f));
         world.add(player, new CameraComponent(70f, 0.1f, 1000f));
         world.add(player, new PlayerInput(false, false, false, false, false, false, 0f, 0f, false, false,
-                false, 0, WorldConstants.NO_HOTBAR_SELECT));
+                false, 0, WorldConstants.NO_HOTBAR_SELECT, false));
         world.add(player, new Hotbar(0));
         world.add(player, startingInventory());
         world.add(player, new Health(WorldConstants.MAX_HEALTH, WorldConstants.MAX_HEALTH));

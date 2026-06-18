@@ -24,7 +24,7 @@ class InputSystemTest {
         world  = new World();
         player = world.create();
         world.add(player, new PlayerInput(false, false, false, false, false, false, 0f, 0f, false, false,
-                false, 0, WorldConstants.NO_HOTBAR_SELECT));
+                false, 0, WorldConstants.NO_HOTBAR_SELECT, false));
     }
 
     /** Build an InputSystem where only the given GLFW key codes are considered pressed. */

@@ -25,9 +25,11 @@ public final class InputSystem implements GameSystem {
     private final KeyQuery         keyQuery;
     private final MouseButtonQuery mouseButtonQuery;
     private final Runnable         closeAction;
-    private float accumulatedDeltaX;
-    private float accumulatedDeltaY;
-    private int   accumulatedScroll;
+    private float   accumulatedDeltaX;
+    private float   accumulatedDeltaY;
+    private int     accumulatedScroll;
+    // Edge detection for the inventory toggle key (E).
+    private boolean eKeyHeldPreviously;
 
     public InputSystem(Window window) {
         this.windowHandle     = window.getHandle();
@@ -92,19 +94,23 @@ public final class InputSystem implements GameSystem {
         accumulatedScroll = 0;
         int hotbarSelect = readHotbarSelect();
 
-        boolean forward     = keyQuery.getKey(windowHandle, GLFW_KEY_W)     == GLFW_PRESS;
-        boolean backward    = keyQuery.getKey(windowHandle, GLFW_KEY_S)     == GLFW_PRESS;
-        boolean strafeLeft  = keyQuery.getKey(windowHandle, GLFW_KEY_A)     == GLFW_PRESS;
-        boolean strafeRight = keyQuery.getKey(windowHandle, GLFW_KEY_D)     == GLFW_PRESS;
-        boolean jump        = keyQuery.getKey(windowHandle, GLFW_KEY_SPACE)        == GLFW_PRESS;
-        boolean descend     = keyQuery.getKey(windowHandle, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS;
-        boolean breakBlock  = mouseButtonQuery.getButton(windowHandle, GLFW_MOUSE_BUTTON_LEFT)  == GLFW_PRESS;
-        boolean placeBlock  = mouseButtonQuery.getButton(windowHandle, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
-        boolean eat         = keyQuery.getKey(windowHandle, GLFW_KEY_F) == GLFW_PRESS;
+        boolean forward         = keyQuery.getKey(windowHandle, GLFW_KEY_W)     == GLFW_PRESS;
+        boolean backward        = keyQuery.getKey(windowHandle, GLFW_KEY_S)     == GLFW_PRESS;
+        boolean strafeLeft      = keyQuery.getKey(windowHandle, GLFW_KEY_A)     == GLFW_PRESS;
+        boolean strafeRight     = keyQuery.getKey(windowHandle, GLFW_KEY_D)     == GLFW_PRESS;
+        boolean jump            = keyQuery.getKey(windowHandle, GLFW_KEY_SPACE)        == GLFW_PRESS;
+        boolean descend         = keyQuery.getKey(windowHandle, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS;
+        boolean breakBlock      = mouseButtonQuery.getButton(windowHandle, GLFW_MOUSE_BUTTON_LEFT)  == GLFW_PRESS;
+        boolean placeBlock      = mouseButtonQuery.getButton(windowHandle, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
+        boolean eat             = keyQuery.getKey(windowHandle, GLFW_KEY_F) == GLFW_PRESS;
+        boolean eKeyNow         = keyQuery.getKey(windowHandle, GLFW_KEY_E) == GLFW_PRESS;
+        boolean toggleInventory = eKeyNow && !eKeyHeldPreviously;
+        eKeyHeldPreviously      = eKeyNow;
 
         for (int eid : world.query(PlayerInput.class)) {
             world.add(new Entity(eid), new PlayerInput(forward, backward, strafeLeft, strafeRight,
-                    jump, descend, dx, dy, breakBlock, placeBlock, eat, scroll, hotbarSelect));
+                    jump, descend, dx, dy, breakBlock, placeBlock, eat, scroll, hotbarSelect,
+                    toggleInventory));
         }
     }
 

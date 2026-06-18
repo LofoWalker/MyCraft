@@ -13,5 +13,7 @@ public record PlayerInput(
         boolean placeBlock,
         boolean eat,
         int scrollDelta,
-        int hotbarSelect
+        int hotbarSelect,
+        // Edge-triggered: true on the tick the player pressed E (toggle inventory screen).
+        boolean toggleInventory
 ) {}

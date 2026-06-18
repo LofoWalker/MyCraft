@@ -5,6 +5,7 @@ import org.example.components.CameraComponent;
 import org.example.components.ColliderAABB;
 import org.example.components.Hotbar;
 import org.example.components.Inventory;
+import org.example.components.InventoryScreen;
 import org.example.components.ItemStack;
 import org.example.components.PlayerInput;
 import org.example.components.Position;
@@ -46,6 +47,14 @@ public final class BlockInteractionSystem implements GameSystem {
 
         Entity      player = new Entity(players[0]);
         PlayerInput input  = world.get(player, PlayerInput.class).orElseThrow();
+
+        // While the inventory screen is open, block interaction is suspended (no break/place).
+        if (world.has(player, InventoryScreen.class)) {
+            breakHeldPreviously = false;
+            placeHeldPreviously = false;
+            return;
+        }
+
         Position    pos    = world.get(player, Position.class).orElseThrow();
         Rotation    rot    = world.get(player, Rotation.class).orElseThrow();
 
@@ -84,12 +93,19 @@ public final class BlockInteractionSystem implements GameSystem {
         placeHeldPreviously = placeNow;
         if (!justPressed || hit.isEmpty()) return;
 
+        // Right-clicking a crafting table opens the 3×3 inventory screen instead of placing.
+        VoxelRaycast.RaycastHit h = hit.get();
+        byte targetBlock = writer.blockAt(h.x(), h.y(), h.z());
+        if (targetBlock == WorldConstants.BLOCK_CRAFTING_TABLE) {
+            world.add(player, InventoryScreen.open(true));
+            return;
+        }
+
         int activeSlot = activeHotbarSlot(world, player);
         ItemStack held = heldStack(world, player, activeSlot);
         if (held.isEmpty()) return;          // empty slot -> nothing to place
         if (!isPlaceableBlock(held)) return; // food / tool / non-block item -> never placed as a block
 
-        VoxelRaycast.RaycastHit h = hit.get();
         int cx = h.x() + h.faceX();
         int cy = h.y() + h.faceY();
         int cz = h.z() + h.faceZ();

@@ -113,6 +113,27 @@ public class Window implements AutoCloseable {
         glfwSetInputMode(handle, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     }
 
+    // Releases the cursor so it can move freely over the inventory screen.
+    public void freeCursor() {
+        glfwSetInputMode(handle, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    }
+
+    // Returns the current cursor X position in screen pixels (top-left origin).
+    public double getCursorX() {
+        double[] x = new double[1];
+        double[] y = new double[1];
+        glfwGetCursorPos(handle, x, y);
+        return x[0];
+    }
+
+    // Returns the current cursor Y position in screen pixels (top-left origin).
+    public double getCursorY() {
+        double[] x = new double[1];
+        double[] y = new double[1];
+        glfwGetCursorPos(handle, x, y);
+        return y[0];
+    }
+
     public long getHandle() { return handle; }
 
     public int getWidth() { return width; }

@@ -32,7 +32,7 @@ class MovementSystemTest {
 
     private void input(boolean fwd, boolean bwd, boolean left, boolean right, boolean jump, float dx, float dy) {
         world.add(player, new PlayerInput(fwd, bwd, left, right, jump, false, dx, dy, false, false,
-                false, 0, WorldConstants.NO_HOTBAR_SELECT));
+                false, 0, WorldConstants.NO_HOTBAR_SELECT, false));
     }
 
     @Test
@@ -144,7 +144,7 @@ class MovementSystemTest {
     void flyingDescendsWhileControlHeld() {
         world.add(player, new Flying());
         world.add(player, new PlayerInput(false, false, false, false, false, true, 0f, 0f, false, false,
-                false, 0, WorldConstants.NO_HOTBAR_SELECT));
+                false, 0, WorldConstants.NO_HOTBAR_SELECT, false));
         system.update(world, 1.0f);
         Position pos = world.get(player, Position.class).orElseThrow();
         assertEquals(-WorldConstants.FLY_VERTICAL_SPEED, pos.y(), 1e-4f);

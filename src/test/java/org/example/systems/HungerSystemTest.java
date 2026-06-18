@@ -44,12 +44,12 @@ class HungerSystemTest {
 
     private static PlayerInput idle() {
         return new PlayerInput(false, false, false, false, false, false, 0f, 0f, false, false,
-                false, 0, WorldConstants.NO_HOTBAR_SELECT);
+                false, 0, WorldConstants.NO_HOTBAR_SELECT, false);
     }
 
     private static PlayerInput eating() {
         return new PlayerInput(false, false, false, false, false, false, 0f, 0f, false, false,
-                true, 0, WorldConstants.NO_HOTBAR_SELECT);
+                true, 0, WorldConstants.NO_HOTBAR_SELECT, false);
     }
 
     private Hunger hunger() {
@@ -93,7 +93,7 @@ class HungerSystemTest {
 
     private static PlayerInput eatingFreeJump() {
         return new PlayerInput(false, false, false, false, true, false, 0f, 0f, false, false,
-                false, 0, WorldConstants.NO_HOTBAR_SELECT);
+                false, 0, WorldConstants.NO_HOTBAR_SELECT, false);
     }
 
     // --- eating ---

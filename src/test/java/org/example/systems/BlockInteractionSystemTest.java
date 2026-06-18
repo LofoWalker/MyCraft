@@ -211,7 +211,7 @@ class BlockInteractionSystemTest {
 
     private static void setPlacing(World world, Entity player, boolean placing) {
         world.add(player, new PlayerInput(false, false, false, false, false, false, 0f, 0f, false, placing,
-                false, 0, WorldConstants.NO_HOTBAR_SELECT));
+                false, 0, WorldConstants.NO_HOTBAR_SELECT, false));
     }
 
     private static void aimStraightDown(World world, Entity player) {
@@ -227,7 +227,7 @@ class BlockInteractionSystemTest {
 
     private static void setBreaking(World world, Entity player, boolean breaking) {
         world.add(player, new PlayerInput(false, false, false, false, false, false, 0f, 0f, breaking, false,
-                false, 0, WorldConstants.NO_HOTBAR_SELECT));
+                false, 0, WorldConstants.NO_HOTBAR_SELECT, false));
     }
 
     private static void aimX(World world, Entity player, float x) {
@@ -250,7 +250,7 @@ class BlockInteractionSystemTest {
         world.add(player, new ColliderAABB(0.6f, 1.8f, 0.6f));
         world.add(player, new CameraComponent(70f, 0.1f, 1000f));
         world.add(player, new PlayerInput(false, false, false, false, false, false, 0f, 0f, false, false,
-                false, 0, WorldConstants.NO_HOTBAR_SELECT));
+                false, 0, WorldConstants.NO_HOTBAR_SELECT, false));
         world.add(player, new Hotbar(0));
         Inventory inventory = Inventories.add(Inventories.empty(),
                 new ItemStack(WorldConstants.BLOCK_STONE, WorldConstants.MAX_STACK)).inventory();

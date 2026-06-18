@@ -34,7 +34,9 @@ public final class WorldConstants {
     public static final byte BLOCK_WATER_FLOW_BASE = 10;  // ids 11..17 = flowing water level 7..1
     public static final byte BLOCK_LAVA            = 18;
     public static final byte BLOCK_LAVA_FLOW_BASE  = 18;  // ids 19..24 = flowing lava level 6..1
-    public static final byte BLOCK_OBSIDIAN        = 25;
+    public static final byte BLOCK_OBSIDIAN         = 25;
+    // Crafting table (id 26): placed by the player; opens the 3×3 crafting grid on right-click.
+    public static final byte BLOCK_CRAFTING_TABLE   = 26;
 
     // Fluid levels: source water is FLUID_SOURCE_LEVEL; flowing water and lava decrement from there.
     // Level 0 is ephemeral and dries up immediately (converted to air at the start of evaluation).
@@ -224,8 +226,17 @@ public final class WorldConstants {
     public static final int ITEM_APPLE = 100;
     public static final int ITEM_BREAD = 101;
 
+    // Intermediate crafting items (non-block, non-tool, non-food).
+    // Sticks are crafted from planks and used as tool handles.
+    public static final int ITEM_STICK = 102;
+
+    // Crafting grid sizes. The player inventory always carries a 2×2 personal grid; a crafting table
+    // block expands it to the standard 3×3 grid.
+    public static final int CRAFTING_GRID_SMALL = 2;
+    public static final int CRAFTING_GRID_LARGE  = 3;
+
     // Highest valid block id; an item id above this is a non-block (e.g. food, tool) and must not be placed.
-    public static final int MAX_BLOCK_ID = BLOCK_OBSIDIAN;
+    public static final int MAX_BLOCK_ID = BLOCK_CRAFTING_TABLE;
 
     // Biome noise (STEP-34). Two independent low-frequency Perlin maps drive biome selection:
     // temperature (T) and humidity (H). Low scales keep biome regions wide and transitions smooth.
