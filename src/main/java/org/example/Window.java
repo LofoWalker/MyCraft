@@ -113,6 +113,10 @@ public class Window implements AutoCloseable {
         glfwSetInputMode(handle, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     }
 
+    public void releaseCursor() {
+        glfwSetInputMode(handle, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    }
+
     public long getHandle() { return handle; }
 
     public int getWidth() { return width; }

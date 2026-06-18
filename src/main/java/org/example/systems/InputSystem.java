@@ -1,5 +1,7 @@
 package org.example.systems;
 
+import org.example.AppState;
+import org.example.AppStateHolder;
 import org.example.Window;
 import org.example.components.PlayerInput;
 import org.example.ecs.Entity;
@@ -25,15 +27,33 @@ public final class InputSystem implements GameSystem {
     private final KeyQuery         keyQuery;
     private final MouseButtonQuery mouseButtonQuery;
     private final Runnable         closeAction;
+    private final AppStateHolder   stateHolder;
+    // Called just before the pause state is requested so the cursor can be released.
+    private final Runnable         onPause;
     private float accumulatedDeltaX;
     private float accumulatedDeltaY;
     private int   accumulatedScroll;
+    private boolean prevEscape = false;
 
+    public InputSystem(Window window, AppStateHolder stateHolder) {
+        this.windowHandle     = window.getHandle();
+        this.keyQuery         = (win, key) -> glfwGetKey(win, key);
+        this.mouseButtonQuery = (win, button) -> glfwGetMouseButton(win, button);
+        this.closeAction      = () -> glfwSetWindowShouldClose(this.windowHandle, true);
+        this.stateHolder      = stateHolder;
+        this.onPause          = window::releaseCursor;
+        registerMouseDeltaCallback();
+        registerScrollCallback();
+    }
+
+    /** Legacy constructor for unit tests without AppStateHolder. */
     public InputSystem(Window window) {
         this.windowHandle     = window.getHandle();
         this.keyQuery         = (win, key) -> glfwGetKey(win, key);
         this.mouseButtonQuery = (win, button) -> glfwGetMouseButton(win, button);
         this.closeAction      = () -> glfwSetWindowShouldClose(this.windowHandle, true);
+        this.stateHolder      = null;
+        this.onPause          = () -> {};
         registerMouseDeltaCallback();
         registerScrollCallback();
     }
@@ -44,6 +64,8 @@ public final class InputSystem implements GameSystem {
         this.keyQuery         = keyQuery;
         this.mouseButtonQuery = (win, button) -> GLFW_RELEASE;
         this.closeAction      = closeAction;
+        this.stateHolder      = null;
+        this.onPause          = () -> {};
     }
 
     // Package-private: inject simulated mouse delta in tests
@@ -78,8 +100,17 @@ public final class InputSystem implements GameSystem {
 
     @Override
     public void update(World world, float dt) {
-        if (keyQuery.getKey(windowHandle, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
-            closeAction.run();
+        boolean escapeDown = keyQuery.getKey(windowHandle, GLFW_KEY_ESCAPE) == GLFW_PRESS;
+        boolean justEscape = escapeDown && !prevEscape;
+        prevEscape = escapeDown;
+
+        if (justEscape) {
+            if (stateHolder != null) {
+                onPause.run();
+                stateHolder.request(AppState.PAUSED);
+            } else {
+                closeAction.run();
+            }
             return;
         }
 

@@ -7,6 +7,8 @@ import org.example.ecs.World;
 import org.example.world.FallDamage;
 import org.example.world.WorldConstants;
 
+import static org.example.systems.GameModeQuery.isCreative;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -29,6 +31,11 @@ public final class HealthSystem implements GameSystem {
         Map<Long, VoxelChunkData> chunkMap = buildChunkMap(world);
         for (int eid : world.query(Health.class, Position.class, Velocity.class)) {
             Entity entity = new Entity(eid);
+            // Creative mode: damage is completely disabled for this entity.
+            if (isCreative(world, entity)) {
+                clearFall(world, entity);
+                continue;
+            }
             decayImmunity(world, entity, dt);
             int damage = fallDamage(world, entity)
                        + drownDamage(world, entity, chunkMap, dt);

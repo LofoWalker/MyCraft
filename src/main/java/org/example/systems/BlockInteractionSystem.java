@@ -14,6 +14,8 @@ import org.example.components.VoxelChunkData;
 import org.example.ecs.Entity;
 import org.example.ecs.GameSystem;
 import org.example.ecs.World;
+
+import static org.example.systems.GameModeQuery.isCreative;
 import org.example.world.AABBCell;
 import org.example.world.BlockDrops;
 import org.example.world.BlockType;
@@ -96,7 +98,10 @@ public final class BlockInteractionSystem implements GameSystem {
         if (!canPlaceAt(world, player, cx, cy, cz, writer)) return;
 
         writer.write(world, cx, cy, cz, (byte) held.itemId());
-        consumeOne(world, player, activeSlot);
+        // Creative mode: infinite resources — the held stack is never decremented.
+        if (!isCreative(world, player)) {
+            consumeOne(world, player, activeSlot);
+        }
     }
 
     // Only real block ids (1..MAX_BLOCK_ID) can be placed. AIR is a no-op and food/tool ids live above
@@ -149,12 +154,20 @@ public final class BlockInteractionSystem implements GameSystem {
     }
 
     private void damageBlock(World world, Entity player, int wx, int wy, int wz, ChunkVoxelWriter writer) {
-        int activeSlot    = activeHotbarSlot(world, player);
-        ItemStack held    = heldStack(world, player, activeSlot);
-        byte broken       = writer.blockAt(wx, wy, wz);
+        int activeSlot      = activeHotbarSlot(world, player);
+        ItemStack held      = heldStack(world, player, activeSlot);
+        byte broken         = writer.blockAt(wx, wy, wz);
         BlockType blockType = BlockType.byId(broken);
-        int damage        = previousDamage(world, player, wx, wy, wz)
-                            + ItemRegistry.damagePerHit(blockType, held.itemId());
+
+        // Creative mode: instant break — skip hardness accumulation.
+        if (isCreative(world, player)) {
+            writer.write(world, wx, wy, wz, WorldConstants.BLOCK_AIR);
+            world.remove(player, BlockBreakProgress.class);
+            return;
+        }
+
+        int damage = previousDamage(world, player, wx, wy, wz)
+                + ItemRegistry.damagePerHit(blockType, held.itemId());
 
         if (damage >= blockType.hardness()) {
             writer.write(world, wx, wy, wz, WorldConstants.BLOCK_AIR);

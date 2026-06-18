@@ -1,5 +1,6 @@
 package org.example.io;
 
+import org.example.components.GameMode;
 import org.example.components.Health;
 import org.example.components.Hotbar;
 import org.example.components.Hunger;
@@ -167,7 +168,8 @@ class WorldStorageTest {
                 new Hunger(18, 3.5f),
                 new TimeOfDay(0.27f),
                 new Hotbar(3),
-                inventory);
+                inventory,
+                new GameMode(GameMode.Mode.SURVIVAL));
 
         storage.writeLevel(original);
         LevelData loaded = storage.readLevel();
@@ -181,6 +183,7 @@ class WorldStorageTest {
         // TimeOfDay comparison with tolerance for float serialisation.
         assertEquals(original.timeOfDay().dayFraction(), loaded.timeOfDay().dayFraction(), 1e-5f);
         assertInventoryEquals(original.inventory(), loaded.inventory());
+        assertEquals(original.gameMode(), loaded.gameMode());
     }
 
     @Test
@@ -200,7 +203,8 @@ class WorldStorageTest {
                 new Hunger(WorldConstants.MAX_FOOD, WorldConstants.MAX_FOOD),
                 new TimeOfDay(0f),
                 new Hotbar(0),
-                Inventories.empty());
+                Inventories.empty(),
+                new GameMode(GameMode.Mode.SURVIVAL));
         storage.writeLevel(level);
         assertTrue(storage.levelExists());
     }
@@ -220,7 +224,8 @@ class WorldStorageTest {
                 new Hunger(WorldConstants.MAX_FOOD, WorldConstants.MAX_FOOD),
                 new TimeOfDay(0f),
                 new Hotbar(0),
-                full);
+                full,
+                new GameMode(GameMode.Mode.CREATIVE));
 
         storage.writeLevel(original);
         LevelData loaded = storage.readLevel();
@@ -239,7 +244,8 @@ class WorldStorageTest {
                 new Hunger(WorldConstants.MAX_FOOD, WorldConstants.MAX_FOOD),
                 new TimeOfDay(0f),
                 new Hotbar(0),
-                Inventories.empty());
+                Inventories.empty(),
+                new GameMode(GameMode.Mode.SURVIVAL));
         storage.writeLevel(level);
         assertEquals(expectedSeed, storage.readLevel().seed());
     }
