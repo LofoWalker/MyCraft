@@ -21,6 +21,7 @@ import org.example.ecs.World;
 import static org.example.systems.GameModeQuery.isCreative;
 import org.example.world.AABBCell;
 import org.example.world.BlockDrops;
+import org.example.world.BlockEntityStore;
 import org.example.world.BlockType;
 import org.example.world.ChunkView;
 import org.example.world.Inventories;
@@ -97,11 +98,23 @@ public final class BlockInteractionSystem implements GameSystem {
         placeHeldPreviously = placeNow;
         if (!justPressed || hit.isEmpty()) return;
 
-        // Right-clicking a crafting table opens the 3×3 inventory screen instead of placing.
+        // Right-clicking a functional block opens its UI instead of placing a block.
         VoxelRaycast.RaycastHit h = hit.get();
         byte targetBlock = writer.blockAt(h.x(), h.y(), h.z());
         if (targetBlock == WorldConstants.BLOCK_CRAFTING_TABLE) {
             world.add(player, InventoryScreen.open(true));
+            return;
+        }
+        if (targetBlock == WorldConstants.BLOCK_FURNACE) {
+            Entity furnaceEntity = BlockEntityStore.get()
+                    .getOrCreate(world, h.x(), h.y(), h.z(), targetBlock);
+            world.add(player, InventoryScreen.openFurnace(furnaceEntity.id()));
+            return;
+        }
+        if (targetBlock == WorldConstants.BLOCK_CHEST) {
+            Entity chestEntity = BlockEntityStore.get()
+                    .getOrCreate(world, h.x(), h.y(), h.z(), targetBlock);
+            world.add(player, InventoryScreen.openChest(chestEntity.id()));
             return;
         }
 
@@ -181,6 +194,7 @@ public final class BlockInteractionSystem implements GameSystem {
         // Creative mode: instant break — skip hardness accumulation.
         if (isCreative(world, player)) {
             writer.write(world, wx, wy, wz, WorldConstants.BLOCK_AIR);
+            dropBlockEntityContents(world, wx, wy, wz, broken);
             world.remove(player, BlockBreakProgress.class);
             return;
         }
@@ -191,11 +205,19 @@ public final class BlockInteractionSystem implements GameSystem {
         if (damage >= blockType.hardness()) {
             writer.write(world, wx, wy, wz, WorldConstants.BLOCK_AIR);
             spawnDropIfEarned(world, wx, wy, wz, blockType, held.itemId());
+            dropBlockEntityContents(world, wx, wy, wz, broken);
             world.remove(player, BlockBreakProgress.class);
             wearDownTool(world, player, activeSlot, held);
             emitBlockSound(world, player, SoundId.BLOCK_BREAK, wx, wy, wz);
         } else {
             world.add(player, new BlockBreakProgress(wx, wy, wz, damage));
+        }
+    }
+
+    // Drops block-entity inventory contents when a furnace or chest is broken.
+    private static void dropBlockEntityContents(World world, int wx, int wy, int wz, byte blockId) {
+        if (blockId == WorldConstants.BLOCK_FURNACE || blockId == WorldConstants.BLOCK_CHEST) {
+            BlockEntityStore.get().remove(world, wx, wy, wz);
         }
     }
 

@@ -43,6 +43,10 @@ public enum BlockType {
     CRAFTING_TABLE  (0.55f, 0.36f, 0.15f, 0.40f, 0.26f, 0.13f, true, 3, Tile.CRAFTING_TOP, Tile.CRAFTING_SIDE, Tile.WOOD_TOP, ToolKind.AXE, 0),
     // Gravel (id 27): gravity-affected like sand; drops when unsupported.
     GRAVEL          (0.60f, 0.58f, 0.56f, true,   1, Tile.GRAVEL,   Tile.GRAVEL,   Tile.GRAVEL,   ToolKind.SHOVEL,  0),
+    // Furnace (id 28): right-click opens the smelting UI; top face shows furnace mouth, sides plain stone.
+    FURNACE         (0.55f, 0.55f, 0.55f, 0.50f, 0.50f, 0.50f, true, 5, Tile.FURNACE_TOP, Tile.FURNACE_SIDE, Tile.STONE, ToolKind.PICKAXE, 0),
+    // Chest (id 29): right-click opens the 27-slot chest storage UI.
+    CHEST           (0.65f, 0.45f, 0.15f, 0.55f, 0.36f, 0.15f, true, 3, Tile.CHEST_TOP,   Tile.CHEST_SIDE,   Tile.WOOD_TOP, ToolKind.AXE, 0),
     UNKNOWN(1.00f, 0.00f, 1.00f, true,  1, Tile.STONE,        Tile.STONE,       Tile.STONE,       ToolKind.NONE,    0);
 
     // Linear tile indices into textures/blocks.png (index = tileY*16 + tileX, top-left origin).
@@ -69,6 +73,11 @@ public enum BlockType {
         static final int CRAFTING_SIDE = 15;
         // Gravity blocks (STEP-33).
         static final int GRAVEL        = 16;
+        // Functional block entities (STEP-28).
+        static final int FURNACE_TOP   = 17;
+        static final int FURNACE_SIDE  = 18;
+        static final int CHEST_TOP     = 19;
+        static final int CHEST_SIDE    = 20;
     }
 
     private static final int NO_EMISSION = 0;
@@ -151,13 +160,14 @@ public enum BlockType {
 
     // Index order must match the BLOCK_* byte ids in WorldConstants.
     // ids: 0=AIR 1=STONE 2=DIRT 3=GRASS 4=WOOD 5=LEAVES 6=WATER 7=IRON 8=DIAMOND 9=TORCH 10=SAND
-    //      11..17=WATER_FLOW_7..1  18=LAVA  19..24=LAVA_FLOW_6..1  25=OBSIDIAN  26=CRAFTING_TABLE  27=GRAVEL
+    //      11..17=WATER_FLOW_7..1  18=LAVA  19..24=LAVA_FLOW_6..1  25=OBSIDIAN  26=CRAFTING_TABLE
+    //      27=GRAVEL  28=FURNACE  29=CHEST
     private static final BlockType[] BY_ID = {
         AIR, STONE, DIRT, GRASS, WOOD, LEAVES, WATER, IRON, DIAMOND, TORCH, SAND,
         WATER_FLOW_7, WATER_FLOW_6, WATER_FLOW_5, WATER_FLOW_4,
         WATER_FLOW_3, WATER_FLOW_2, WATER_FLOW_1,
         LAVA, LAVA_FLOW_6, LAVA_FLOW_5, LAVA_FLOW_4, LAVA_FLOW_3, LAVA_FLOW_2, LAVA_FLOW_1,
-        OBSIDIAN, CRAFTING_TABLE, GRAVEL
+        OBSIDIAN, CRAFTING_TABLE, GRAVEL, FURNACE, CHEST
     };
 
     public static BlockType byId(byte id) {

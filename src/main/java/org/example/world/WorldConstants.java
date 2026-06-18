@@ -239,8 +239,27 @@ public final class WorldConstants {
     // just above the crafting table (26).
     public static final byte BLOCK_GRAVEL = 27;
 
+    // Functional block entities (STEP-28). Furnace (id 28): right-click opens smelting UI.
+    // Chest (id 29): right-click opens chest storage UI.
+    public static final byte BLOCK_FURNACE = 28;
+    public static final byte BLOCK_CHEST   = 29;
+
     // Highest valid block id; an item id above this is a non-block (e.g. food, tool) and must not be placed.
-    public static final int MAX_BLOCK_ID = BLOCK_GRAVEL;
+    public static final int MAX_BLOCK_ID = BLOCK_CHEST;
+
+    // Furnace smelting (STEP-28). A fuel item burns for fuelBurnTicks; the input item cooks for
+    // FURNACE_COOK_TIME ticks. When cookTicks reaches FURNACE_COOK_TIME, one input is consumed and
+    // one output is produced.
+    public static final int FURNACE_COOK_TIME            = 200; // ~10 s at 20 tps
+    public static final int FURNACE_FUEL_TICKS_COAL      = 1600; // coal burns 80 s at 20 tps
+    public static final int FURNACE_FUEL_TICKS_WOOD      = 300;  // wood burns 15 s at 20 tps
+
+    // Chest storage (STEP-28). A chest has a fixed 3×9 = 27-slot grid.
+    public static final int CHEST_SLOTS = 27;
+
+    // Smelting output item ids (STEP-28). Iron ore smelts to iron ingot; the ingot is a non-block
+    // non-tool item sitting in the 300s range to stay clear of blocks (0..29) and tools (200..239).
+    public static final int ITEM_IRON_INGOT = 300;
 
     // Random tick (STEP-33). Number of random cells sampled per chunk per tick.
     // Low enough to bound CPU cost; high enough that grass spreads visibly over a few seconds.

@@ -191,7 +191,8 @@ public final class InventoryScreenSystem implements GameSystem, AutoCloseable {
     private InventoryScreen updateCursor(World world, Entity player, InventoryScreen screen) {
         double cx = window.getCursorX();
         double cy = window.getCursorY();
-        return new InventoryScreen(cx, cy, screen.heldStack(), screen.craftingTableOpen());
+        return new InventoryScreen(cx, cy, screen.heldStack(), screen.craftingTableOpen(),
+                screen.furnaceEntityId(), screen.chestEntityId());
     }
 
     // --- Click handling ---
@@ -261,7 +262,7 @@ public final class InventoryScreenSystem implements GameSystem, AutoCloseable {
         slots[slot] = held;
         world.add(player, new Inventory(slots));
         return new InventoryScreen(screen.cursorX(), screen.cursorY(), slotStack,
-                screen.craftingTableOpen());
+                screen.craftingTableOpen(), screen.furnaceEntityId(), screen.chestEntityId());
     }
 
     // Swaps the held stack with a crafting grid cell, then re-evaluates the recipe.
@@ -276,7 +277,7 @@ public final class InventoryScreenSystem implements GameSystem, AutoCloseable {
         CraftingGrid updated = recomputeResult(newSlots, grid.size());
         world.add(player, updated);
         return new InventoryScreen(screen.cursorX(), screen.cursorY(), slotStack,
-                screen.craftingTableOpen());
+                screen.craftingTableOpen(), screen.furnaceEntityId(), screen.chestEntityId());
     }
 
     // Takes the craft result: consumes one of each ingredient and gives the result to the held stack.
@@ -287,7 +288,7 @@ public final class InventoryScreenSystem implements GameSystem, AutoCloseable {
         CraftingGrid updated = recomputeResult(newSlots, grid.size());
         world.add(player, updated);
         return new InventoryScreen(screen.cursorX(), screen.cursorY(), result,
-                screen.craftingTableOpen());
+                screen.craftingTableOpen(), screen.furnaceEntityId(), screen.chestEntityId());
     }
 
     // Decrements each non-empty cell by one (removes it if count reaches zero).
