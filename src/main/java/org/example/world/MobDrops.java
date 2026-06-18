@@ -20,7 +20,8 @@ public final class MobDrops {
             case PIG     -> new int[]{ WorldConstants.ITEM_PORK };
             case SHEEP   -> new int[]{ WorldConstants.ITEM_WOOL };
             case CHICKEN -> new int[]{ WorldConstants.ITEM_FEATHER };
-            case ZOMBIE  -> new int[0];
+            // Hostile mobs drop nothing yet (bones/string/gunpowder items are a future step).
+            case ZOMBIE, SKELETON, SPIDER, CREEPER -> new int[0];
         };
     }
 }

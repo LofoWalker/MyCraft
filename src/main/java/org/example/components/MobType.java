@@ -12,7 +12,10 @@ public record MobType(Kind kind) {
         PIG(0.9f, 0.9f, 10),
         SHEEP(0.9f, 1.3f, 8),
         CHICKEN(0.4f, 0.7f, 4),
-        ZOMBIE(0.6f, 1.95f, 20);
+        ZOMBIE(0.6f, 1.95f, 20),
+        SKELETON(0.6f, 1.99f, 20),
+        SPIDER(1.4f, 0.9f, 16),
+        CREEPER(0.6f, 1.7f, 20);
 
         private final float width;
         private final float height;
