@@ -1,5 +1,6 @@
 package org.example.systems;
 
+import org.example.audio.SoundId;
 import org.example.components.BlockBreakProgress;
 import org.example.components.CameraComponent;
 import org.example.components.ColliderAABB;
@@ -10,6 +11,7 @@ import org.example.components.ItemStack;
 import org.example.components.PlayerInput;
 import org.example.components.Position;
 import org.example.components.Rotation;
+import org.example.components.SoundEvent;
 import org.example.components.TargetedBlock;
 import org.example.components.VoxelChunkData;
 import org.example.ecs.Entity;
@@ -113,6 +115,7 @@ public final class BlockInteractionSystem implements GameSystem {
 
         writer.write(world, cx, cy, cz, (byte) held.itemId());
         consumeOne(world, player, activeSlot);
+        emitBlockSound(world, player, SoundId.BLOCK_PLACE, cx, cy, cz);
     }
 
     // Only real block ids (1..MAX_BLOCK_ID) can be placed. AIR is a no-op and food/tool ids live above
@@ -177,6 +180,7 @@ public final class BlockInteractionSystem implements GameSystem {
             spawnDropIfEarned(world, wx, wy, wz, blockType, held.itemId());
             world.remove(player, BlockBreakProgress.class);
             wearDownTool(world, player, activeSlot, held);
+            emitBlockSound(world, player, SoundId.BLOCK_BREAK, wx, wy, wz);
         } else {
             world.add(player, new BlockBreakProgress(wx, wy, wz, damage));
         }
@@ -202,5 +206,10 @@ public final class BlockInteractionSystem implements GameSystem {
         if (!ItemRegistry.isTool(held.itemId())) return;
         world.get(player, Inventory.class)
                 .ifPresent(inv -> world.add(player, Inventories.decrementDurability(inv, activeSlot)));
+    }
+
+    // Attaches a transient SoundEvent to the player entity; AudioSystem consumes it next tick.
+    private static void emitBlockSound(World world, Entity player, SoundId id, int wx, int wy, int wz) {
+        world.add(player, new SoundEvent(id, wx + 0.5f, wy + 0.5f, wz + 0.5f));
     }
 }
