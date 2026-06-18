@@ -87,6 +87,8 @@ public class Main {
             simScheduler.add(new HungerSystem());
             simScheduler.add(new CollisionSystem());
             simScheduler.add(new ItemPickupSystem());
+            simScheduler.add(new MobAiSystem());
+            simScheduler.add(new PassiveSpawnSystem());
 
             renderScheduler.add(new CameraSystem(window.getAspectRatio()));
             renderScheduler.add(sky);

@@ -36,6 +36,21 @@ final class ItemDrops {
         world.add(item, new PickupDelay(WorldConstants.ITEM_PICKUP_DELAY));
     }
 
+    /** Spawns a drop at an arbitrary float world position (used for mob death drops). */
+    static void spawnAt(World world, float x, float y, float z, int itemId) {
+        if (itemId == WorldConstants.BLOCK_AIR) return;
+
+        float size = WorldConstants.ITEM_COLLIDER_SIZE;
+        Entity item = world.create();
+        world.add(item, new ItemEntity());
+        world.add(item, new ItemStack(itemId, 1));
+        world.add(item, new Position(x, y, z));
+        world.add(item, new Velocity(scatter(), WorldConstants.ITEM_SPAWN_POP_SPEED, scatter()));
+        world.add(item, new Gravity(WorldConstants.GRAVITY));
+        world.add(item, new ColliderAABB(size, size, size));
+        world.add(item, new PickupDelay(WorldConstants.ITEM_PICKUP_DELAY));
+    }
+
     private static float scatter() {
         float s = WorldConstants.ITEM_SPAWN_SCATTER;
         return ThreadLocalRandom.current().nextFloat() * 2f * s - s;
