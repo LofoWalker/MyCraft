@@ -1,5 +1,6 @@
 package org.example;
 
+import org.example.audio.SoundEngine;
 import org.example.components.*;
 import org.example.ecs.Entity;
 import org.example.ecs.SystemScheduler;
@@ -60,6 +61,7 @@ public class Main {
 
         window.captureCursor();
 
+        SoundEngine soundEngine = tryCreateSoundEngine();
         try (Shader shader = Shader.fromResources("/shaders/basic.vert", "/shaders/basic.frag");
              Shader waterShader = Shader.fromResources("/shaders/water.vert", "/shaders/water.frag");
              TextureAtlas atlas = TextureAtlas.loadFromClasspath("/textures/blocks.png");
@@ -97,12 +99,29 @@ public class Main {
             renderScheduler.add(itemRender);
             renderScheduler.add(entityRender);
             renderScheduler.add(hud);
+            if (soundEngine != null) {
+                renderScheduler.add(new AudioSystem(soundEngine));
+            }
 
             GameLoop.run(window, world, simScheduler, renderScheduler);
 
             // Clean shutdown: flush modified chunks then persist the player's final state.
             chunkStreaming.flushModifiedChunks(world);
             storage.writeLevel(snapshotLevel(world, player, seed));
+        } finally {
+            if (soundEngine != null) {
+                soundEngine.close();
+            }
+        }
+    }
+
+    // Opens an OpenAL device if one is available; returns null on headless / CI machines.
+    private static SoundEngine tryCreateSoundEngine() {
+        try {
+            return new SoundEngine();
+        } catch (Exception e) {
+            System.err.println("[Audio] No OpenAL device — running without sound: " + e.getMessage());
+            return null;
         }
     }
 
