@@ -129,7 +129,7 @@ public final class ChunkMeshingSystem implements GameSystem, AutoCloseable {
             for (int z = 0; z < SX; z++)
                 for (int x = 0; x < SX; x++) {
                     byte block = data.get(x, y, z);
-                    if (block == WorldConstants.BLOCK_WATER) appendWaterFaces(water, data, light, x, y, z);
+                    if (isWaterBlock(block)) appendWaterFaces(water, data, light, x, y, z);
                     else if (block != WorldConstants.BLOCK_AIR) appendVisibleFaces(opaque, data, light, x, y, z, block);
                 }
         return new ChunkGeometry(opaque.toGeometry(), water.toGeometry());
@@ -234,10 +234,15 @@ public final class ChunkMeshingSystem implements GameSystem, AutoCloseable {
         return data.get(x, y, z) == WorldConstants.BLOCK_AIR;
     }
 
+    /** Returns true for any water block (source or flowing level). */
     private static boolean isWater(VoxelChunkData data, int x, int y, int z) {
         int SX = WorldConstants.CHUNK_SIZE_XZ;
         if (x < 0 || x >= SX || y < 0 || y >= WorldConstants.WORLD_HEIGHT || z < 0 || z >= SX) return false;
-        return data.get(x, y, z) == WorldConstants.BLOCK_WATER;
+        return isWaterBlock(data.get(x, y, z));
+    }
+
+    private static boolean isWaterBlock(byte id) {
+        return org.example.world.FluidLogic.isWater(id);
     }
 
     private static float[] blockFaceUv(BlockType type, int face) {

@@ -108,7 +108,7 @@ public final class HealthSystem implements GameSystem {
         int wx = (int) Math.floor(pos.x());
         int wy = (int) Math.floor(pos.y() + WorldConstants.PLAYER_EYE_HEIGHT);
         int wz = (int) Math.floor(pos.z());
-        return blockAt(wx, wy, wz, chunkMap) == WorldConstants.BLOCK_WATER;
+        return org.example.world.FluidLogic.isWater(blockAt(wx, wy, wz, chunkMap));
     }
 
     // --- Damage / immunity / post-damage clock (regen lives in HungerSystem) ---
