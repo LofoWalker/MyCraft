@@ -291,4 +291,51 @@ public final class WorldConstants {
     // Short i-frames prevent rapid repeated damage; value intentionally higher than drowning.
     public static final int   LAVA_DAMAGE          = 4;
     public static final float LAVA_DAMAGE_INTERVAL = 0.5f;
+
+    // Mob drop item ids (non-block, non-tool; sit in the 100s alongside food and sticks).
+    // 100=APPLE 101=BREAD 102=STICK, so mob drops start at 103.
+    public static final int ITEM_LEATHER = 103;
+    public static final int ITEM_BEEF    = 104;
+    public static final int ITEM_PORK    = 105;
+    public static final int ITEM_WOOL    = 106;
+    public static final int ITEM_FEATHER = 107;
+
+    // Passive mob AI (STEP-30).
+    // How long (in seconds) a mob stays IDLE before choosing a wander target.
+    public static final float MOB_IDLE_MIN_SECONDS   = 2.0f;
+    public static final float MOB_IDLE_MAX_SECONDS   = 6.0f;
+    // How long (in seconds) a mob wanders before returning to IDLE.
+    public static final float MOB_WANDER_MAX_SECONDS = 5.0f;
+    // How long (in seconds) a mob flees after being hit.
+    public static final float MOB_FLEE_SECONDS       = 3.0f;
+    // Horizontal speed while wandering and fleeing.
+    public static final float MOB_WANDER_SPEED       = 1.8f;
+    public static final float MOB_FLEE_SPEED         = 4.5f;
+    // Radius within which a random wander target is chosen (in blocks, XZ plane).
+    public static final float MOB_WANDER_RADIUS      = 8.0f;
+    // A mob attempts a 1-block jump when it hits a wall while wandering.
+    public static final float MOB_JUMP_IMPULSE        = 6.0f;
+    // Passive mob spawn rules.
+    // Minimum distance from the player before a spawn attempt is made.
+    public static final float MOB_SPAWN_MIN_RADIUS    = 12.0f;
+    // Maximum distance from the player for a spawn attempt (must be within loaded chunks).
+    public static final float MOB_SPAWN_MAX_RADIUS    = 48.0f;
+    // Cap on passive mobs that can co-exist within one chunk area.
+    public static final int   MAX_PASSIVE_PER_AREA    = 10;
+    // Number of world chunks (radius) that define the "area" used for the population cap.
+    public static final int   MOB_AREA_CHUNK_RADIUS   = 4;
+    // How often (in seconds) the spawn system attempts a spawn pass.
+    public static final float MOB_SPAWN_INTERVAL      = 5.0f;
+    // How often (in seconds) the spawn system checks for mobs to despawn.
+    public static final float MOB_DESPAWN_INTERVAL    = 10.0f;
+    // A mob beyond this distance from the player is eligible for despawn.
+    public static final float MOB_DESPAWN_RADIUS      = 80.0f;
+    // Pack size range for a single spawn attempt.
+    public static final int   MOB_PACK_MIN            = 1;
+    public static final int   MOB_PACK_MAX            = 4;
+    // Day/night threshold: dayFraction < NIGHT_START or > NIGHT_END is daytime.
+    // 0=dawn, 0.25=noon, 0.5=dusk, 0.75=midnight. Daytime = [0, 0.5).
+    public static final float MOB_SPAWN_DAY_FRACTION_MAX = 0.5f;
+    // A mob is considered grounded when blocked, used in AI jump logic.
+    public static final float MOB_OBSTACLE_CHECK_DIST = 0.6f;
 }
