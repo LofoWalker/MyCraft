@@ -4,12 +4,14 @@ import org.example.components.ChunkComponent;
 import org.example.components.ChunkDirty;
 import org.example.components.ChunkLight;
 import org.example.components.ChunkMeshComponent;
+import org.example.components.ChunkModified;
 import org.example.components.PlayerInput;
 import org.example.components.Position;
 import org.example.components.VoxelChunkData;
 import org.example.ecs.Entity;
 import org.example.ecs.GameSystem;
 import org.example.ecs.World;
+import org.example.io.WorldStorage;
 import org.example.render.Mesh;
 import org.example.systems.ChunkMeshingSystem.ChunkGeometry;
 import org.example.world.LightEngine;
@@ -32,6 +34,7 @@ public final class ChunkStreamingSystem implements GameSystem, AutoCloseable {
                                ChunkGeometry geometry) {}
 
     private final GenerationPipeline generation;
+    private final Optional<WorldStorage> storage;
     private final ExecutorService workers = Executors.newVirtualThreadPerTaskExecutor();
     private final ConcurrentLinkedQueue<ChunkResult> ready = new ConcurrentLinkedQueue<>();
 
@@ -42,6 +45,12 @@ public final class ChunkStreamingSystem implements GameSystem, AutoCloseable {
 
     public ChunkStreamingSystem(long seed) {
         this.generation = GenerationPipeline.overworld(seed);
+        this.storage    = Optional.empty();
+    }
+
+    public ChunkStreamingSystem(long seed, WorldStorage storage) {
+        this.generation = GenerationPipeline.overworld(seed);
+        this.storage    = Optional.of(storage);
     }
 
     @Override
@@ -128,14 +137,25 @@ public final class ChunkStreamingSystem implements GameSystem, AutoCloseable {
     }
 
     // Generation + light + geometry are pure CPU work; they never touch the World or OpenGL.
+    // If a WorldStorage is configured and has saved data for this chunk, use it directly;
+    // otherwise fall through to the procedural pipeline.
     private void submitGeneration(long key, int entityId, int cx, int cz) {
         workers.submit(() -> {
-            VoxelChunkData data = VoxelChunkData.empty();
-            generation.generate(data, cx, cz);
+            VoxelChunkData data = loadOrGenerate(cx, cz);
             byte[] light = LightEngine.computeLight(data);
             ChunkGeometry geometry = ChunkMeshingSystem.buildGeometry(data, light);
             ready.add(new ChunkResult(key, entityId, data, light, geometry));
         });
+    }
+
+    private VoxelChunkData loadOrGenerate(int cx, int cz) {
+        if (storage.isPresent()) {
+            Optional<VoxelChunkData> saved = storage.get().readChunk(cx, cz);
+            if (saved.isPresent()) return saved.get();
+        }
+        VoxelChunkData data = VoxelChunkData.empty();
+        generation.generate(data, cx, cz);
+        return data;
     }
 
     private void unloadDistantChunks(World world, int playerCx, int playerCz) {
@@ -150,9 +170,25 @@ public final class ChunkStreamingSystem implements GameSystem, AutoCloseable {
         }
     }
 
+    // If the chunk was modified, persist it before destroying its entity.
     private void unloadChunk(World world, int entityId) {
+        Entity entity = new Entity(entityId);
+        boolean modified = world.get(entity, ChunkModified.class).isPresent();
+        if (modified && storage.isPresent()) {
+            world.get(entity, ChunkComponent.class).ifPresent(chunk ->
+                world.get(entity, VoxelChunkData.class).ifPresent(data ->
+                    saveChunkAsync(chunk.x(), chunk.z(), data)));
+        }
         closeMeshes(entityId);
-        world.destroy(new Entity(entityId));
+        world.destroy(entity);
+    }
+
+    // Persist on a virtual-thread worker so the main thread is never stalled by disk I/O.
+    private void saveChunkAsync(int cx, int cz, VoxelChunkData data) {
+        // Capture the block array snapshot; VoxelChunkData.blocks is the live array shared with
+        // the World. Copy it so the worker sees a stable snapshot even if the entity is destroyed.
+        byte[] snapshot = data.blocks().clone();
+        workers.submit(() -> storage.get().writeChunk(cx, cz, new VoxelChunkData(snapshot)));
     }
 
     // OpenGL is single-threaded: meshes are uploaded here, throttled to bound per-frame spikes.
@@ -179,6 +215,21 @@ public final class ChunkStreamingSystem implements GameSystem, AutoCloseable {
         world.add(entity, new ChunkLight(result.light()));
         closeMeshes(result.entityId());
         uploadMeshes(world, entity, result.geometry());
+    }
+
+    // Flush all currently-loaded modified chunks to disk before shutdown.
+    public void flushModifiedChunks(World world) {
+        if (storage.isEmpty()) return;
+        for (int entityId : loadedEntities.values()) {
+            Entity entity = new Entity(entityId);
+            boolean modified = world.get(entity, ChunkModified.class).isPresent();
+            if (!modified) continue;
+            world.get(entity, ChunkComponent.class).ifPresent(chunk ->
+                world.get(entity, VoxelChunkData.class).ifPresent(data -> {
+                    byte[] snapshot = data.blocks().clone();
+                    storage.get().writeChunk(chunk.x(), chunk.z(), new VoxelChunkData(snapshot));
+                }));
+        }
     }
 
     @Override

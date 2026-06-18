@@ -2,6 +2,7 @@ package org.example.systems;
 
 import org.example.components.ChunkComponent;
 import org.example.components.ChunkDirty;
+import org.example.components.ChunkModified;
 import org.example.components.VoxelChunkData;
 import org.example.ecs.Entity;
 import org.example.ecs.World;
@@ -64,6 +65,10 @@ final class ChunkVoxelWriter {
         if (entityId == null || data == null) return;
 
         data.set(wx - cx * s, wy, wz - cz * s, blockId);
-        world.add(new Entity(entityId), new ChunkDirty());
+        Entity chunkEntity = new Entity(entityId);
+        world.add(chunkEntity, new ChunkDirty());
+        // Persist this chunk on the next unload/shutdown (distinct from ChunkDirty which only
+        // triggers a remesh and is cleared after the rebuild).
+        world.add(chunkEntity, new ChunkModified());
     }
 }

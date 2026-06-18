@@ -39,3 +39,6 @@ build/
 .DS_Store
 ### Git worktrees (parallel ticket dev) ###
 .worktrees/
+
+### MyCraft saves ###
+saves/
