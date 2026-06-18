@@ -4,6 +4,8 @@ import org.example.components.*;
 import org.example.ecs.Entity;
 import org.example.ecs.SystemScheduler;
 import org.example.ecs.World;
+import org.example.io.WorldStorage;
+import org.example.io.WorldStorage.LevelData;
 import org.example.render.Shader;
 import org.example.render.TextureAtlas;
 import org.example.systems.*;
@@ -15,8 +17,9 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public class Main {
 
-    private static final int   SPAWN_X = 8;
-    private static final int   SPAWN_Z = 8;
+    private static final int    SPAWN_X    = 8;
+    private static final int    SPAWN_Z    = 8;
+    private static final String WORLD_NAME = "world";
 
     static void main(String[] args) {
         try (Window window = new Window(1920, 1080, "MyCraft")) {
@@ -30,28 +33,21 @@ public class Main {
         SystemScheduler simScheduler    = new SystemScheduler();
         SystemScheduler renderScheduler = new SystemScheduler();
 
-        long seed = ThreadLocalRandom.current().nextLong();
-        System.out.println("World seed: " + seed);
-
-        float spawnY = spawnHeight(seed);
+        WorldStorage storage = WorldStorage.forWorld(WORLD_NAME);
+        long seed;
         Entity player = world.create();
-        world.add(player, new Position(SPAWN_X, spawnY, SPAWN_Z));
-        world.add(player, new Rotation(-30f, -20f));
-        world.add(player, new Velocity(0f, 0f, 0f));
-        world.add(player, new Gravity(WorldConstants.GRAVITY));
-        world.add(player, new ColliderAABB(0.6f, 1.8f, 0.6f));
-        world.add(player, new CameraComponent(70f, 0.1f, 1000f));
-        world.add(player, new PlayerInput(false, false, false, false, false, false, 0f, 0f, false, false,
-                false, 0, WorldConstants.NO_HOTBAR_SELECT));
-        world.add(player, new Hotbar(0));
-        world.add(player, startingInventory());
-        world.add(player, new Health(WorldConstants.MAX_HEALTH, WorldConstants.MAX_HEALTH));
-        world.add(player, new Hunger(WorldConstants.MAX_FOOD, WorldConstants.MAX_FOOD));
-        world.add(player, new HungerTimers(0f, 0f, 0f));
-        world.add(player, new Breath(WorldConstants.BREATH_SECONDS));
-        world.add(player, new DamageImmunity(0f));
-        world.add(player, new DamageTimers(0f, 0f, 0f));
-        world.add(player, new SpawnPoint(SPAWN_X, spawnY, SPAWN_Z));
+
+        if (storage.levelExists()) {
+            LevelData level = storage.readLevel();
+            seed = level.seed();
+            System.out.println("Loaded world seed: " + seed);
+            restorePlayer(world, player, level);
+        } else {
+            seed = ThreadLocalRandom.current().nextLong();
+            System.out.println("New world seed: " + seed);
+            initNewPlayer(world, player, seed);
+            storage.writeLevel(snapshotLevel(world, player, seed));
+        }
 
         Entity worldClock = world.create();
         world.add(worldClock, new TimeOfDay(0f));
@@ -61,7 +57,7 @@ public class Main {
         try (Shader shader = Shader.fromResources("/shaders/basic.vert", "/shaders/basic.frag");
              Shader waterShader = Shader.fromResources("/shaders/water.vert", "/shaders/water.frag");
              TextureAtlas atlas = TextureAtlas.loadFromClasspath("/textures/blocks.png");
-             ChunkStreamingSystem chunkStreaming = new ChunkStreamingSystem(seed);
+             ChunkStreamingSystem chunkStreaming = new ChunkStreamingSystem(seed, storage);
              SkySystem sky = new SkySystem();
              BlockHighlightSystem blockHighlight = new BlockHighlightSystem();
              BlockBreakOverlaySystem breakOverlay = new BlockBreakOverlaySystem();
@@ -94,7 +90,69 @@ public class Main {
             renderScheduler.add(hud);
 
             GameLoop.run(window, world, simScheduler, renderScheduler);
+
+            // Clean shutdown: flush modified chunks then persist the player's final state.
+            chunkStreaming.flushModifiedChunks(world);
+            storage.writeLevel(snapshotLevel(world, player, seed));
         }
+    }
+
+    // -------------------------------------------------------------------------
+    // Player initialisation and restore
+    // -------------------------------------------------------------------------
+
+    private static void initNewPlayer(World world, Entity player, long seed) {
+        float spawnY = spawnHeight(seed);
+        world.add(player, new Position(SPAWN_X, spawnY, SPAWN_Z));
+        world.add(player, new Rotation(-30f, -20f));
+        addSharedComponents(world, player);
+        world.add(player, new SpawnPoint(SPAWN_X, spawnY, SPAWN_Z));
+    }
+
+    private static void restorePlayer(World world, Entity player, LevelData level) {
+        world.add(player, level.position());
+        world.add(player, level.rotation());
+        addSharedComponents(world, player);
+        Position p = level.position();
+        world.add(player, new SpawnPoint(p.x(), p.y(), p.z()));
+        // Overwrite the default health/hunger/inventory/hotbar with the saved values.
+        world.add(player, level.health());
+        world.add(player, level.hunger());
+        world.add(player, level.inventory());
+        world.add(player, level.hotbar());
+    }
+
+    // Components that are always created fresh (physics state, timers, etc.) even on load.
+    private static void addSharedComponents(World world, Entity player) {
+        world.add(player, new Velocity(0f, 0f, 0f));
+        world.add(player, new Gravity(WorldConstants.GRAVITY));
+        world.add(player, new ColliderAABB(0.6f, 1.8f, 0.6f));
+        world.add(player, new CameraComponent(70f, 0.1f, 1000f));
+        world.add(player, new PlayerInput(false, false, false, false, false, false, 0f, 0f, false, false,
+                false, 0, WorldConstants.NO_HOTBAR_SELECT));
+        world.add(player, new Hotbar(0));
+        world.add(player, startingInventory());
+        world.add(player, new Health(WorldConstants.MAX_HEALTH, WorldConstants.MAX_HEALTH));
+        world.add(player, new Hunger(WorldConstants.MAX_FOOD, WorldConstants.MAX_FOOD));
+        world.add(player, new HungerTimers(0f, 0f, 0f));
+        world.add(player, new Breath(WorldConstants.BREATH_SECONDS));
+        world.add(player, new DamageImmunity(0f));
+        world.add(player, new DamageTimers(0f, 0f, 0f));
+    }
+
+    // Capture a consistent snapshot of the player for level.dat. Called on clean exit.
+    private static LevelData snapshotLevel(World world, Entity player, long seed) {
+        Position pos    = world.get(player, Position.class)
+                               .orElse(new Position(SPAWN_X, 64, SPAWN_Z));
+        Rotation rot    = world.get(player, Rotation.class).orElse(new Rotation(0f, 0f));
+        Health   health = world.get(player, Health.class)
+                               .orElse(new Health(WorldConstants.MAX_HEALTH, WorldConstants.MAX_HEALTH));
+        Hunger   hunger = world.get(player, Hunger.class)
+                               .orElse(new Hunger(WorldConstants.MAX_FOOD, WorldConstants.MAX_FOOD));
+        TimeOfDay tod   = new TimeOfDay(0f);
+        Hotbar   hotbar = world.get(player, Hotbar.class).orElse(new Hotbar(0));
+        Inventory inv   = world.get(player, Inventory.class).orElse(startingInventory());
+        return LevelData.of(seed, pos, rot, health, hunger, tod, hotbar, inv);
     }
 
     // A few full stacks of placeable blocks so the player can build straight away. They land in the
