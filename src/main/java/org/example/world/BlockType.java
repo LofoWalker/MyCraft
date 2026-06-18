@@ -39,6 +39,8 @@ public enum BlockType {
     LAVA_FLOW_1 (0.95f, 0.40f, 0.05f, false, 0, Tile.LAVA, Tile.LAVA, Tile.LAVA, ToolKind.NONE, 0),
     // Obsidian (id 25): created where lava source meets water; needs a diamond pickaxe.
     OBSIDIAN    (0.10f, 0.08f, 0.15f, true,  50, Tile.OBSIDIAN, Tile.OBSIDIAN, Tile.OBSIDIAN, ToolKind.PICKAXE, 4),
+    // Gravel (id 26): gravity-affected like sand; drops when unsupported.
+    GRAVEL      (0.60f, 0.58f, 0.56f, true,   1, Tile.GRAVEL,   Tile.GRAVEL,   Tile.GRAVEL,   ToolKind.SHOVEL,  0),
     UNKNOWN(1.00f, 0.00f, 1.00f, true,  1, Tile.STONE,        Tile.STONE,       Tile.STONE,       ToolKind.NONE,    0);
 
     // Linear tile indices into textures/blocks.png (index = tileY*16 + tileX, top-left origin).
@@ -60,6 +62,8 @@ public enum BlockType {
         // Fluid and new blocks (STEP-32).
         static final int LAVA        = 12;
         static final int OBSIDIAN    = 13;
+        // Gravity blocks (STEP-33).
+        static final int GRAVEL      = 14;
     }
 
     private static final int NO_EMISSION = 0;
@@ -129,6 +133,9 @@ public enum BlockType {
     public ToolKind effectiveTool()      { return effectiveTool; }
     public int      requiredMiningLevel(){ return requiredMiningLevel; }
 
+    /** True when this block should fall when the cell directly below it is air or fluid. */
+    public boolean affectedByGravity()  { return this == SAND || this == GRAVEL; }
+
     // Mesh tint multiplied against the sampled atlas texel. Painted blocks tint white (texture shown
     // at full strength); UNKNOWN keeps its magenta so an unmapped id stays visibly wrong in-world.
     private static final float[] WHITE_TINT = { 1f, 1f, 1f };
@@ -139,13 +146,13 @@ public enum BlockType {
 
     // Index order must match the BLOCK_* byte ids in WorldConstants.
     // ids: 0=AIR 1=STONE 2=DIRT 3=GRASS 4=WOOD 5=LEAVES 6=WATER 7=IRON 8=DIAMOND 9=TORCH 10=SAND
-    //      11..17=WATER_FLOW_7..1  18=LAVA  19..24=LAVA_FLOW_6..1  25=OBSIDIAN
+    //      11..17=WATER_FLOW_7..1  18=LAVA  19..24=LAVA_FLOW_6..1  25=OBSIDIAN  26=GRAVEL
     private static final BlockType[] BY_ID = {
         AIR, STONE, DIRT, GRASS, WOOD, LEAVES, WATER, IRON, DIAMOND, TORCH, SAND,
         WATER_FLOW_7, WATER_FLOW_6, WATER_FLOW_5, WATER_FLOW_4,
         WATER_FLOW_3, WATER_FLOW_2, WATER_FLOW_1,
         LAVA, LAVA_FLOW_6, LAVA_FLOW_5, LAVA_FLOW_4, LAVA_FLOW_3, LAVA_FLOW_2, LAVA_FLOW_1,
-        OBSIDIAN
+        OBSIDIAN, GRAVEL
     };
 
     public static BlockType byId(byte id) {
