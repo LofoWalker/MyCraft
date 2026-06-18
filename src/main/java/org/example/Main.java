@@ -7,7 +7,9 @@ import org.example.ecs.World;
 import org.example.render.Shader;
 import org.example.render.TextureAtlas;
 import org.example.systems.*;
+import org.example.components.MobType;
 import org.example.world.Inventories;
+import org.example.world.Mobs;
 import org.example.world.WorldConstants;
 import org.example.worldgen.TerrainShape;
 
@@ -56,6 +58,9 @@ public class Main {
         Entity worldClock = world.create();
         world.add(worldClock, new TimeOfDay(0f));
 
+        // Test mob: a cow spawned a few blocks away from the player, falls to ground under gravity.
+        Mobs.spawn(world, MobType.Kind.COW, SPAWN_X + 3, spawnY, SPAWN_Z + 3);
+
         window.captureCursor();
 
         try (Shader shader = Shader.fromResources("/shaders/basic.vert", "/shaders/basic.frag");
@@ -66,7 +71,8 @@ public class Main {
              BlockHighlightSystem blockHighlight = new BlockHighlightSystem();
              BlockBreakOverlaySystem breakOverlay = new BlockBreakOverlaySystem();
              ItemRenderSystem itemRender = new ItemRenderSystem();
-             HudSystem hud = new HudSystem(window)) {
+             HudSystem hud = new HudSystem(window);
+             EntityRenderSystem entityRender = new EntityRenderSystem()) {
 
             simScheduler.add(new TimeSystem());
             simScheduler.add(new InputSystem(window));
@@ -91,6 +97,7 @@ public class Main {
             renderScheduler.add(blockHighlight);
             renderScheduler.add(breakOverlay);
             renderScheduler.add(itemRender);
+            renderScheduler.add(entityRender);
             renderScheduler.add(hud);
 
             GameLoop.run(window, world, simScheduler, renderScheduler);
