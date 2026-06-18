@@ -2,6 +2,7 @@ package org.example;
 
 import org.example.audio.SoundEngine;
 import org.example.components.*;
+import org.example.world.BlockEntityStore;
 import org.example.ecs.Entity;
 import org.example.ecs.SystemScheduler;
 import org.example.ecs.World;
@@ -57,6 +58,8 @@ public class Main {
             // Clean up any previous session
             closeQuietly(gameResources[0]);
             gameResources[0] = null;
+            // Block-entity positions are world-specific; drop any from a prior session.
+            BlockEntityStore.get().clear();
 
             WorldStorage storage = WorldStorage.forWorld(worldName);
             storageRef[0]        = storage;
@@ -132,6 +135,7 @@ public class Main {
                 sim.add(new InputSystem(window, stateHolder));
                 sim.add(new HotbarSelectionSystem());
                 sim.add(new BlockInteractionSystem());
+                sim.add(new FurnaceSystem());
                 sim.add(new FluidSystem());
                 sim.add(new BlockGravitySystem());
                 sim.add(new RandomTickSystem());

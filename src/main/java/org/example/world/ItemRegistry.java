@@ -30,7 +30,7 @@ public final class ItemRegistry {
     public static final int SWORD_GOLD    = 233;
     public static final int SWORD_DIAMOND = 234;
 
-    private static final int TABLE_SIZE = 256;
+    private static final int TABLE_SIZE = 512;
 
     // Per-item data; indexed by itemId. Slots that have no item defined use DEFAULT_ENTRY.
     public record ItemData(
@@ -66,6 +66,10 @@ public final class ItemRegistry {
         // Intermediate crafting material: sticks (not a food, not a tool, not a block).
         TABLE[WorldConstants.ITEM_STICK] = new ItemData(
                 WorldConstants.ITEM_STICK, WorldConstants.MAX_STACK, false, false, ToolKind.NONE, null, 0);
+
+        // Smelting output items (STEP-28). Iron ingot is produced by smelting iron ore in a furnace.
+        TABLE[WorldConstants.ITEM_IRON_INGOT] = new ItemData(
+                WorldConstants.ITEM_IRON_INGOT, WorldConstants.MAX_STACK, false, false, ToolKind.NONE, null, 0);
 
         // Tools.
         registerTool(PICKAXE_WOOD,    ToolKind.PICKAXE, ToolMaterial.WOOD,    59);
