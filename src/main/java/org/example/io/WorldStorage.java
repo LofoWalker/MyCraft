@@ -1,5 +1,6 @@
 package org.example.io;
 
+import org.example.components.GameMode;
 import org.example.components.Health;
 import org.example.components.Hotbar;
 import org.example.components.Hunger;
@@ -42,8 +43,9 @@ import java.util.zip.GZIPOutputStream;
 public final class WorldStorage {
 
     // Format version — bump when the binary layout changes so old saves fail fast.
+    // v1: original layout. v2: added gameMode field (STEP-37).
     public static final int REGION_FORMAT_VERSION = 1;
-    public static final int LEVEL_FORMAT_VERSION  = 1;
+    public static final int LEVEL_FORMAT_VERSION  = 2;
 
     // Each region covers REGION_CHUNKS × REGION_CHUNKS chunk columns.
     public static final int REGION_CHUNKS = 32;
@@ -65,6 +67,32 @@ public final class WorldStorage {
     /** Factory for a named world under the global {@code saves/} directory. */
     public static WorldStorage forWorld(String worldName) {
         return new WorldStorage(Path.of("saves", worldName));
+    }
+
+    /**
+     * Returns the names of all existing world saves found in the {@code saves/} directory.
+     * Each name corresponds to a sub-directory that contains a {@code level.dat} file.
+     */
+    public static java.util.List<String> listWorlds() {
+        return listWorldsIn(Path.of("saves"));
+    }
+
+    /**
+     * Returns the names of all existing world saves found under {@code savesDir}.
+     * Used in tests to supply an isolated directory instead of the real {@code saves/} path.
+     */
+    public static java.util.List<String> listWorldsIn(Path savesDir) {
+        if (!Files.exists(savesDir)) return java.util.List.of();
+        try (java.util.stream.Stream<Path> entries = Files.list(savesDir)) {
+            return entries
+                    .filter(Files::isDirectory)
+                    .filter(p -> Files.exists(p.resolve("level.dat")))
+                    .map(p -> p.getFileName().toString())
+                    .sorted()
+                    .toList();
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to list worlds in " + savesDir, e);
+        }
     }
 
     // -------------------------------------------------------------------------
@@ -150,6 +178,10 @@ public final class WorldStorage {
             float dayFraction = in.readFloat();
             int   hotbarSlot  = in.readInt();
             ItemStack[] slots = readInventory(in);
+            int   gameModeOrd = in.readInt();
+            GameMode.Mode modeEnum = gameModeOrd == 1
+                    ? GameMode.Mode.CREATIVE
+                    : GameMode.Mode.SURVIVAL;
 
             return new LevelData(
                     seed,
@@ -159,7 +191,8 @@ public final class WorldStorage {
                     new Hunger(food, saturation),
                     new TimeOfDay(dayFraction),
                     new Hotbar(hotbarSlot),
-                    new Inventory(slots));
+                    new Inventory(slots),
+                    new GameMode(modeEnum));
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to read level.dat", e);
         }
@@ -190,6 +223,7 @@ public final class WorldStorage {
             out.writeFloat(level.timeOfDay().dayFraction());
             out.writeInt(level.hotbar().selectedSlot());
             writeInventory(out, level.inventory().slots());
+            out.writeInt(level.gameMode().mode() == GameMode.Mode.CREATIVE ? 1 : 0);
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to write level.dat", e);
         }
@@ -400,12 +434,14 @@ public final class WorldStorage {
             Hunger hunger,
             TimeOfDay timeOfDay,
             Hotbar hotbar,
-            Inventory inventory) {
+            Inventory inventory,
+            GameMode gameMode) {
 
         public static LevelData of(long seed, Position position, Rotation rotation,
                                    Health health, Hunger hunger, TimeOfDay timeOfDay,
-                                   Hotbar hotbar, Inventory inventory) {
-            return new LevelData(seed, position, rotation, health, hunger, timeOfDay, hotbar, inventory);
+                                   Hotbar hotbar, Inventory inventory, GameMode gameMode) {
+            return new LevelData(seed, position, rotation, health, hunger, timeOfDay,
+                    hotbar, inventory, gameMode);
         }
     }
 }

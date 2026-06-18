@@ -13,6 +13,8 @@ import org.example.components.Velocity;
 import org.example.ecs.Entity;
 import org.example.ecs.GameSystem;
 import org.example.ecs.World;
+
+import static org.example.systems.GameModeQuery.isCreative;
 import org.example.world.Foods;
 import org.example.world.HungerMath;
 import org.example.world.Inventories;
@@ -36,6 +38,8 @@ public final class HungerSystem implements GameSystem {
     public void update(World world, float dt) {
         for (int eid : world.query(Hunger.class, Health.class, Velocity.class)) {
             Entity entity = new Entity(eid);
+            // Creative mode: hunger does not drain and cannot cause starvation.
+            if (isCreative(world, entity)) continue;
             accumulateActivity(world, entity, dt);
             drainExhaustion(world, entity);
             applyEating(world, entity);

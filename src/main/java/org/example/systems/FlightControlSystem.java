@@ -7,6 +7,8 @@ import org.example.ecs.GameSystem;
 import org.example.ecs.World;
 import org.example.world.WorldConstants;
 
+import static org.example.systems.GameModeQuery.isCreative;
+
 public final class FlightControlSystem implements GameSystem {
 
     private boolean prevJump   = false;
@@ -16,7 +18,13 @@ public final class FlightControlSystem implements GameSystem {
     public void update(World world, float dt) {
         sinceLastTap += dt;
         for (int eid : world.query(PlayerInput.class)) {
-            Entity      entity = new Entity(eid);
+            Entity entity = new Entity(eid);
+            // Creative mode: flying is always on. Ensure the Flying component is present and skip
+            // the double-tap toggle so the player cannot accidentally ground themselves.
+            if (isCreative(world, entity)) {
+                if (!world.has(entity, Flying.class)) world.add(entity, new Flying());
+                continue;
+            }
             PlayerInput input  = world.get(entity, PlayerInput.class).orElseThrow();
             boolean risingEdge = input.jump() && !prevJump;
             if (risingEdge) registerTap(world, entity);

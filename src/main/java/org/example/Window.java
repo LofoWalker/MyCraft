@@ -118,6 +118,11 @@ public class Window implements AutoCloseable {
         glfwSetInputMode(handle, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
     }
 
+    // Releases the cursor for menu screens (main menu / pause).
+    public void releaseCursor() {
+        glfwSetInputMode(handle, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    }
+
     // Returns the current cursor X position in screen pixels (top-left origin).
     public double getCursorX() {
         double[] x = new double[1];
