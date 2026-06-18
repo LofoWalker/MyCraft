@@ -267,7 +267,7 @@ Réalisé :
 
 ---
 
-## Milestone D — Items, craft & blocs fonctionnels
+## Milestone D — Items, craft & blocs fonctionnels ✅ LIVRÉ (steps 26-28)
 
 ### Step 26 — Registre d'items & outils
 - `ItemRegistry` (id → type, max stack, durabilité), familles d'outils (pioche/hache/pelle/épée).
@@ -287,7 +287,7 @@ Réalisé :
 
 ---
 
-## Milestone E — Monde vivant (mobs)
+## Milestone E — Monde vivant (mobs) ✅ LIVRÉ (steps 29-31)
 
 ### Step 29 — Cadre entités mobiles + rendu
 - Components mob : `MobType`, `Health`, IA (`AiState`), `PathTarget`. Rendu de modèles simples
@@ -306,7 +306,7 @@ Réalisé :
 
 ---
 
-## Milestone F — Simulation dynamique du monde
+## Milestone F — Simulation dynamique du monde ✅ LIVRÉ (steps 32-34)
 
 ### Step 32 — Fluides dynamiques
 - Écoulement eau/lave (niveaux 0-7, propagation décrémentale, mise à jour en file d'updates de
@@ -325,7 +325,7 @@ Réalisé :
 
 ---
 
-## Milestone G — Persistance, audio & menus
+## Milestone G — Persistance, audio & menus ✅ LIVRÉ (steps 35-37)
 
 ### Step 35 — Sauvegarde / chargement du monde
 - Sérialisation des chunks modifiés (fichiers région), state joueur (pos/inventaire/vie), seed.

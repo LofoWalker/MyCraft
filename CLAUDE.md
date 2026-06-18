@@ -70,13 +70,24 @@ InputSystem → PhysicsSystem → CollisionSystem → MovementSystem
 | 23 | Cycle jour/nuit | ✅ Done |
 | 24 | Vie & dégâts (chute/noyade, respawn) | ✅ Done |
 | 25 | Faim & nourriture | ✅ Done |
-| 26-37 | Items/craft, mobs, fluides, biomes, save, audio, menus | ⏳ À venir |
+| 26 | Registre d'items & outils | ✅ Done |
+| 27 | Craft (2×2 + table 3×3) | ✅ Done |
+| 28 | Fourneau & coffre | ✅ Done |
+| 29 | Cadre entités mobiles + rendu | ✅ Done |
+| 30 | Mobs passifs + spawn | ✅ Done |
+| 31 | Mobs hostiles + combat + IA (A*) | ✅ Done |
+| 32 | Fluides dynamiques | ✅ Done |
+| 33 | Gravité de blocs & random tick | ✅ Done |
+| 34 | Biomes | ✅ Done |
+| 35 | Sauvegarde / chargement | ✅ Done |
+| 36 | Audio (OpenAL) | ✅ Done |
+| 37 | Menus & modes de jeu | ✅ Done |
 
 ### Phase 2 (vers la beta) — Steps 13 à 37
 Détaillée dans `ROADMAP.md` (milestones A→G). **Tous les tickets de la phase 2 sont rédigés** dans
 `tickets/` (un fichier `TICKET-N-*.md` par step, prêts pour un agent en autonomie) — voir
-`tickets/README.md` pour l'index et le mode d'emploi. **Milestones A, B et C livrés (steps 13-25)** ;
-steps 26-37 (items/craft, mobs, simulation, persistance, audio, menus) à venir.
+`tickets/README.md` pour l'index et le mode d'emploi. **Phase 2 complète : steps 13-37 tous livrés**
+(milestones A→G), build vert avec la suite de tests JUnit complète.
 
 ## Conventions clean code
 - **Noms expressifs** — pas d'abréviations sauf conventions établies (`dt`, `dx`, `ebo`).
