@@ -199,8 +199,13 @@ public final class WorldConstants {
     public static final int ITEM_APPLE = 100;
     public static final int ITEM_BREAD = 101;
 
-    // Highest valid block id; an item id above this is a non-block (e.g. food) and must not be placed.
+    // Highest valid block id; an item id above this is a non-block (e.g. food, tool) and must not be placed.
     public static final int MAX_BLOCK_ID = BLOCK_TORCH;
+
+    // Tool item ids (see world.ItemRegistry for the full table and per-material constants).
+    // These mirror ItemRegistry.*  so call-sites in WorldConstants-land don't have to import ItemRegistry.
+    public static final int TOOL_ID_FIRST = 200;
+    public static final int TOOL_ID_LAST  = 239;
 
     // TODO(STEP-24): lava contact damage + short i-frames once BLOCK_LAVA and its atlas tile exist.
     // Out of scope here: no lava block/tile is added, so the HealthSystem only handles fall + drowning.

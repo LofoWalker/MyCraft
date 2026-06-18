@@ -15,9 +15,11 @@ import org.example.ecs.Entity;
 import org.example.ecs.GameSystem;
 import org.example.ecs.World;
 import org.example.world.AABBCell;
+import org.example.world.BlockDrops;
 import org.example.world.BlockType;
 import org.example.world.ChunkView;
 import org.example.world.Inventories;
+import org.example.world.ItemRegistry;
 import org.example.world.VoxelRaycast;
 import org.example.world.WorldConstants;
 
@@ -85,7 +87,7 @@ public final class BlockInteractionSystem implements GameSystem {
         int activeSlot = activeHotbarSlot(world, player);
         ItemStack held = heldStack(world, player, activeSlot);
         if (held.isEmpty()) return;          // empty slot -> nothing to place
-        if (!isPlaceableBlock(held)) return; // food / non-block item -> never placed as a block
+        if (!isPlaceableBlock(held)) return; // food / tool / non-block item -> never placed as a block
 
         VoxelRaycast.RaycastHit h = hit.get();
         int cx = h.x() + h.faceX();
@@ -97,8 +99,8 @@ public final class BlockInteractionSystem implements GameSystem {
         consumeOne(world, player, activeSlot);
     }
 
-    // Only real block ids (1..MAX_BLOCK_ID) can be placed. AIR is a no-op and food ids live above the
-    // block range (see WorldConstants.ITEM_*), so eating a food never drops a phantom block.
+    // Only real block ids (1..MAX_BLOCK_ID) can be placed. AIR is a no-op and food/tool ids live above
+    // the block range, so eating or wielding a tool never places a phantom block.
     private static boolean isPlaceableBlock(ItemStack held) {
         int id = held.itemId();
         return id > WorldConstants.BLOCK_AIR && id <= WorldConstants.MAX_BLOCK_ID;
@@ -130,7 +132,7 @@ public final class BlockInteractionSystem implements GameSystem {
     }
 
     private static Optional<VoxelRaycast.RaycastHit> castFromEye(Position pos, Rotation rot,
-                                                                 Map<Long, VoxelChunkData> chunkData) {
+                                                                  Map<Long, VoxelChunkData> chunkData) {
         float yawRad   = (float) Math.toRadians(rot.yaw());
         float pitchRad = (float) Math.toRadians(rot.pitch());
         float cosPitch = (float) Math.cos(pitchRad);
@@ -147,24 +149,42 @@ public final class BlockInteractionSystem implements GameSystem {
     }
 
     private void damageBlock(World world, Entity player, int wx, int wy, int wz, ChunkVoxelWriter writer) {
-        int damage = accumulatedDamage(world, player, wx, wy, wz);
-        byte broken = writer.blockAt(wx, wy, wz);
-        int hardness = BlockType.byId(broken).hardness();
-        if (damage >= hardness) {
+        int activeSlot    = activeHotbarSlot(world, player);
+        ItemStack held    = heldStack(world, player, activeSlot);
+        byte broken       = writer.blockAt(wx, wy, wz);
+        BlockType blockType = BlockType.byId(broken);
+        int damage        = previousDamage(world, player, wx, wy, wz)
+                            + ItemRegistry.damagePerHit(blockType, held.itemId());
+
+        if (damage >= blockType.hardness()) {
             writer.write(world, wx, wy, wz, WorldConstants.BLOCK_AIR);
-            ItemDrops.spawn(world, wx, wy, wz, broken);
+            spawnDropIfEarned(world, wx, wy, wz, blockType, held.itemId());
             world.remove(player, BlockBreakProgress.class);
+            wearDownTool(world, player, activeSlot, held);
         } else {
             world.add(player, new BlockBreakProgress(wx, wy, wz, damage));
         }
     }
 
-    // Continues the in-progress break if the same voxel is still targeted, otherwise starts fresh.
-    private static int accumulatedDamage(World world, Entity player, int wx, int wy, int wz) {
-        int previous = world.get(player, BlockBreakProgress.class)
+    // Returns accumulated damage from a previous in-progress break on the same voxel, or 0 if none.
+    private static int previousDamage(World world, Entity player, int wx, int wy, int wz) {
+        return world.get(player, BlockBreakProgress.class)
                 .filter(p -> p.targets(wx, wy, wz))
                 .map(BlockBreakProgress::damage)
                 .orElse(0);
-        return previous + WorldConstants.BARE_HAND_DAMAGE;
+    }
+
+    private static void spawnDropIfEarned(World world, int wx, int wy, int wz,
+                                          BlockType blockType, int heldItemId) {
+        int dropId = BlockDrops.dropItemId(blockType, heldItemId);
+        if (dropId != BlockDrops.NO_DROP) {
+            ItemDrops.spawn(world, wx, wy, wz, (byte) dropId);
+        }
+    }
+
+    private static void wearDownTool(World world, Entity player, int activeSlot, ItemStack held) {
+        if (!ItemRegistry.isTool(held.itemId())) return;
+        world.get(player, Inventory.class)
+                .ifPresent(inv -> world.add(player, Inventories.decrementDurability(inv, activeSlot)));
     }
 }
