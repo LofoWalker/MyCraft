@@ -18,6 +18,7 @@ public enum BlockType {
     DIAMOND(0.40f, 0.85f, 0.90f, true, 9, Tile.DIAMOND_ORE, Tile.DIAMOND_ORE, Tile.DIAMOND_ORE),
     // A torch is non-solid (light/walk through it) and emits blocklight; it is mined in a single hit.
     TORCH (1.00f, 0.85f, 0.40f, false, 1, WorldConstants.TORCH_EMISSION, Tile.TORCH, Tile.TORCH, Tile.TORCH),
+    SAND  (0.93f, 0.87f, 0.62f, true,  1, Tile.SAND, Tile.SAND, Tile.SAND),
     UNKNOWN(1.00f, 0.00f, 1.00f, true, 1, Tile.STONE, Tile.STONE, Tile.STONE);
 
     // Linear tile indices into textures/blocks.png (index = tileY*16 + tileX, top-left origin).
@@ -96,7 +97,7 @@ public enum BlockType {
     }
 
     // Index order must match the BLOCK_* byte ids in WorldConstants.
-    private static final BlockType[] BY_ID = { AIR, STONE, DIRT, GRASS, WOOD, LEAVES, WATER, IRON, DIAMOND, TORCH };
+    private static final BlockType[] BY_ID = { AIR, STONE, DIRT, GRASS, WOOD, LEAVES, WATER, IRON, DIAMOND, TORCH, SAND };
 
     public static BlockType byId(byte id) {
         int i = id & 0xFF;

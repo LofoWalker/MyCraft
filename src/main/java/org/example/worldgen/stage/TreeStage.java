@@ -2,22 +2,31 @@ package org.example.worldgen.stage;
 
 import org.example.components.VoxelChunkData;
 import org.example.world.WorldConstants;
+import org.example.worldgen.Biome;
+import org.example.worldgen.BiomeMap;
 import org.example.worldgen.SpatialHash;
 import org.example.worldgen.SurfaceHeights;
 
 // Decoration stage: plants deterministic trees on columns whose surface is the configured ground
-// block. Trees stay inside chunk bounds (no cross-chunk writes), leaving a thin treeless seam at
-// borders. Surface heights come from the pipeline (real height field or a flat-world constant).
+// block. Tree density varies by biome via BiomeMap: forests are dense, deserts and oceans have none.
+// Trees stay inside chunk bounds (no cross-chunk writes), leaving a thin treeless seam at borders.
 public final class TreeStage implements GenerationStage {
 
     private final SurfaceHeights heights;
     private final long           seed;
     private final byte           groundBlock;
+    private final BiomeMap       biomeMap;
 
-    public TreeStage(SurfaceHeights heights, long seed, byte groundBlock) {
+    public TreeStage(SurfaceHeights heights, long seed, byte groundBlock, BiomeMap biomeMap) {
         this.heights     = heights;
         this.seed        = seed;
         this.groundBlock = groundBlock;
+        this.biomeMap    = biomeMap;
+    }
+
+    // Legacy constructor for tests and flat pipeline that don't need biome-aware tree density.
+    public TreeStage(SurfaceHeights heights, long seed, byte groundBlock) {
+        this(heights, seed, groundBlock, null);
     }
 
     @Override
@@ -28,7 +37,8 @@ public final class TreeStage implements GenerationStage {
             for (int bz = margin; bz < s - margin; bz++) {
                 int worldX = chunkX * s + bx;
                 int worldZ = chunkZ * s + bz;
-                if (!shouldPlantTree(worldX, worldZ)) continue;
+                int rarity = treeRarityAt(worldX, worldZ);
+                if (!shouldPlantTree(worldX, worldZ, rarity)) continue;
                 int surfaceY = heights.surfaceY(worldX, worldZ);
                 if (data.get(bx, surfaceY, bz) != groundBlock) continue;
                 growTree(data, bx, bz, surfaceY, trunkHeight(worldX, worldZ));
@@ -36,8 +46,14 @@ public final class TreeStage implements GenerationStage {
         }
     }
 
-    private boolean shouldPlantTree(int worldX, int worldZ) {
-        return SpatialHash.hash(worldX, worldZ, seed) % WorldConstants.TREE_RARITY == 0;
+    private int treeRarityAt(int worldX, int worldZ) {
+        if (biomeMap == null) return WorldConstants.TREE_RARITY;
+        return biomeMap.biomeAt(worldX, worldZ).treeRarity();
+    }
+
+    private boolean shouldPlantTree(int worldX, int worldZ, int rarity) {
+        if (rarity == WorldConstants.TREE_RARITY_NONE) return false;
+        return SpatialHash.hash(worldX, worldZ, seed) % rarity == 0;
     }
 
     private int trunkHeight(int worldX, int worldZ) {

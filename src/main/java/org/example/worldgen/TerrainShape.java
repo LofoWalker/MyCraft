@@ -6,6 +6,8 @@ import org.example.worldgen.noise.PerlinNoise;
 // Pure height field: maps a world (x, z) to a surface Y by combining rolling hills, rare wide
 // mountains, lake basins and river channels. Holds no chunk state, so any stage that needs the
 // surface height (terrain fill, tree planting) can share one instance.
+// When a BiomeMap is supplied, the base terrain amplitude and vertical offset are blended per biome
+// so height transitions between zones are smooth rather than cliff-walled.
 public final class TerrainShape implements SurfaceHeights {
 
     private static final double NOISE_SCALE      = 0.05;
@@ -18,12 +20,20 @@ public final class TerrainShape implements SurfaceHeights {
     private final PerlinNoise noise;
     private final PerlinNoise riverNoise;
     private final PerlinNoise basinNoise;
+    private final BiomeMap    biomeMap;
 
     public TerrainShape(long seed) {
+        this(seed, new BiomeMap(seed));
+    }
+
+    public TerrainShape(long seed, BiomeMap biomeMap) {
         this.noise      = new PerlinNoise(seed);
         this.riverNoise = new PerlinNoise(seed ^ 0x817E5L);
         this.basinNoise = new PerlinNoise(seed ^ 0xBA51AL);
+        this.biomeMap   = biomeMap;
     }
+
+    public BiomeMap biomeMap() { return biomeMap; }
 
     @Override
     public int surfaceY(int worldX, int worldZ) {
@@ -31,8 +41,11 @@ public final class TerrainShape implements SurfaceHeights {
     }
 
     public int surfaceY(double worldX, double worldZ) {
-        double hills   = noise.fractal(worldX * NOISE_SCALE, worldZ * NOISE_SCALE, OCTAVES, PERSISTENCE, LACUNARITY);
-        double base    = WorldConstants.TERRAIN_BASE_HEIGHT + hills * WorldConstants.TERRAIN_AMPLITUDE;
+        double hills          = noise.fractal(worldX * NOISE_SCALE, worldZ * NOISE_SCALE, OCTAVES, PERSISTENCE, LACUNARITY);
+        double ampScale       = biomeMap.blendedAmplitudeScale(worldX, worldZ);
+        double baseOffset     = biomeMap.blendedBaseOffset(worldX, worldZ);
+        double base           = WorldConstants.TERRAIN_BASE_HEIGHT + baseOffset
+                + hills * WorldConstants.TERRAIN_AMPLITUDE * ampScale;
         int    surface = (int) Math.round(base + mountainHeight(worldX, worldZ));
         surface = carveBasin(surface, worldX, worldZ);
         return clampToWorld(carveRiver(surface, worldX, worldZ));

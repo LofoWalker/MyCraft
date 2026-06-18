@@ -2,6 +2,8 @@ package org.example.worldgen.stage;
 
 import org.example.components.VoxelChunkData;
 import org.example.world.WorldConstants;
+import org.example.worldgen.Biome;
+import org.example.worldgen.BiomeMap;
 import org.example.worldgen.TerrainShape;
 import org.junit.jupiter.api.Test;
 
@@ -149,6 +151,92 @@ class TerrainStageTest {
             }
         }
         assertTrue(foundVariation, "All columns have the same height — terrain is flat");
+    }
+
+    // --- Biome-palette tests (STEP-34) ---
+
+    @Test
+    void desertTopBlockIsSand() {
+        // topBlock for DESERT biome at dry land elevation should be SAND, not GRASS.
+        byte top = TerrainStage.topBlock(WorldConstants.WATER_LEVEL + 5, Biome.DESERT);
+        assertEquals(WorldConstants.BLOCK_SAND, top, "Desert surface should be sand");
+    }
+
+    @Test
+    void desertColumnHasNoGrass() {
+        // Force desert biome everywhere by using a fixed biome map stub.
+        VoxelChunkData data = generateWithFixedBiome(Biome.DESERT, 0, 0);
+        for (int bx = 0; bx < SX; bx++) {
+            for (int bz = 0; bz < SX; bz++) {
+                for (int by = 0; by < H; by++) {
+                    assertNotEquals(WorldConstants.BLOCK_GRASS, data.get(bx, by, bz),
+                            "Grass should not appear in a pure desert chunk");
+                }
+            }
+        }
+    }
+
+    @Test
+    void desertSurfaceIsSandAndSubSurfaceIsSandThenStone() {
+        // In a desert column, the surface block is sand, the layer below is sand, and
+        // 4 blocks below the surface is stone.
+        int dryElevation = WorldConstants.WATER_LEVEL + 5;
+        byte surface = TerrainStage.topBlock(dryElevation, Biome.DESERT);
+        byte subSurface1 = TerrainStage.classifyBlock(dryElevation - 1, dryElevation, Biome.DESERT);
+        byte deep = TerrainStage.classifyBlock(dryElevation - 4, dryElevation, Biome.DESERT);
+        assertEquals(WorldConstants.BLOCK_SAND, surface,  "Desert surface is sand");
+        assertEquals(WorldConstants.BLOCK_SAND, subSurface1, "Desert sub-surface layer is sand");
+        assertEquals(WorldConstants.BLOCK_STONE, deep,   "Desert 4 blocks deep is stone");
+    }
+
+    @Test
+    void oceanColumnFillsWithWaterAboveTerrain() {
+        // Force ocean biome everywhere; the biome just affects terrain amplitude/offset, but
+        // water fill is handled by classifyBlock. A depressed surface should be flooded.
+        VoxelChunkData data = generateWithFixedBiome(Biome.OCEAN, 0, 0);
+        boolean foundWater = false;
+        for (int bx = 0; bx < SX && !foundWater; bx++) {
+            for (int bz = 0; bz < SX && !foundWater; bz++) {
+                if (data.get(bx, WorldConstants.WATER_LEVEL, bz) == WorldConstants.BLOCK_WATER) {
+                    foundWater = true;
+                }
+            }
+        }
+        assertTrue(foundWater, "Ocean biome should produce water at sea level");
+    }
+
+    @Test
+    void plainsTopBlockIsGrass() {
+        byte top = TerrainStage.topBlock(WorldConstants.WATER_LEVEL + 3, Biome.PLAINS);
+        assertEquals(WorldConstants.BLOCK_GRASS, top, "Plains surface should be grass");
+    }
+
+    @Test
+    void forestTopBlockIsGrass() {
+        byte top = TerrainStage.topBlock(WorldConstants.WATER_LEVEL + 3, Biome.FOREST);
+        assertEquals(WorldConstants.BLOCK_GRASS, top, "Forest surface should be grass");
+    }
+
+    @Test
+    void mountainPeakIsBareStone() {
+        byte top = TerrainStage.topBlock(WorldConstants.ROCK_LEVEL + 5, Biome.MOUNTAINS);
+        assertEquals(WorldConstants.BLOCK_STONE, top, "Mountain peak above ROCK_LEVEL should be bare stone");
+    }
+
+    /** Generates a chunk where all columns are forced to the given biome. */
+    private static VoxelChunkData generateWithFixedBiome(Biome fixedBiome, int cx, int cz) {
+        // Use a fixed-biome TerrainShape via anonymous BiomeMap override.
+        long seed = WorldConstants.WORLD_SEED;
+        BiomeMap fixedMap = new BiomeMap(seed) {
+            @Override public Biome biomeAt(int x, int z) { return fixedBiome; }
+            @Override public double blendedBaseOffset(double x, double z)     { return fixedBiome.baseOffset(); }
+            @Override public double blendedAmplitudeScale(double x, double z) { return fixedBiome.amplitudeScale(); }
+        };
+        TerrainShape shape = new TerrainShape(seed, fixedMap);
+        TerrainStage stage = new TerrainStage(shape);
+        VoxelChunkData data = VoxelChunkData.empty();
+        stage.apply(data, cx, cz);
+        return data;
     }
 
     /** Returns the y of the highest solid terrain block (ignoring air and water), or -1 if none. */

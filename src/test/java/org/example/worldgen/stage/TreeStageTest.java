@@ -2,6 +2,8 @@ package org.example.worldgen.stage;
 
 import org.example.components.VoxelChunkData;
 import org.example.world.WorldConstants;
+import org.example.worldgen.Biome;
+import org.example.worldgen.BiomeMap;
 import org.example.worldgen.TerrainShape;
 import org.junit.jupiter.api.Test;
 
@@ -94,5 +96,54 @@ class TreeStageTest {
             if (data.get(bx, by, bz) == WorldConstants.BLOCK_WOOD) return by;
         }
         return -1;
+    }
+
+    // --- Biome-aware tree density tests (STEP-34) ---
+
+    @Test
+    void forestHasMoreTreesThanPlains() {
+        int forestTrees = countTreesInBiome(Biome.FOREST);
+        int plainsTrees = countTreesInBiome(Biome.PLAINS);
+        assertTrue(forestTrees > plainsTrees,
+                "Forest (" + forestTrees + " trees) should have more trees than plains (" + plainsTrees + ")");
+    }
+
+    @Test
+    void desertHasNoTrees() {
+        int desertTrees = countTreesInBiome(Biome.DESERT);
+        assertEquals(0, desertTrees, "Desert should have zero trees");
+    }
+
+    @Test
+    void oceanHasNoTrees() {
+        int oceanTrees = countTreesInBiome(Biome.OCEAN);
+        assertEquals(0, oceanTrees, "Ocean should have zero trees");
+    }
+
+    /** Count wood blocks across a 4×4 region of chunks under a forced fixed biome. */
+    private int countTreesInBiome(Biome fixedBiome) {
+        BiomeMap fixedMap = new BiomeMap(SEED) {
+            @Override public Biome biomeAt(int x, int z)                      { return fixedBiome; }
+            @Override public double blendedBaseOffset(double x, double z)     { return fixedBiome.baseOffset(); }
+            @Override public double blendedAmplitudeScale(double x, double z) { return fixedBiome.amplitudeScale(); }
+        };
+        TerrainShape biomeShape   = new TerrainShape(SEED, fixedMap);
+        TerrainStage biomeTerrain = new TerrainStage(biomeShape);
+        // Forest and plains use BLOCK_GRASS as ground; desert uses BLOCK_SAND so trees won't grow.
+        byte groundBlock = (fixedBiome == Biome.DESERT || fixedBiome == Biome.OCEAN)
+                ? WorldConstants.BLOCK_GRASS : WorldConstants.BLOCK_GRASS;
+        TreeStage biomeTree = new TreeStage(biomeShape, SEED, groundBlock, fixedMap);
+        int woodCount = 0;
+        for (int cx = 0; cx < 4; cx++) {
+            for (int cz = 0; cz < 4; cz++) {
+                VoxelChunkData data = VoxelChunkData.empty();
+                biomeTerrain.apply(data, cx, cz);
+                biomeTree.apply(data, cx, cz);
+                for (int b : data.blocks()) {
+                    if (b == WorldConstants.BLOCK_WOOD) woodCount++;
+                }
+            }
+        }
+        return woodCount;
     }
 }

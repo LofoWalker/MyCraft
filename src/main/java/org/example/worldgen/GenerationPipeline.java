@@ -24,13 +24,14 @@ public final class GenerationPipeline {
     }
 
     public static GenerationPipeline overworld(long seed) {
-        TerrainShape shape = new TerrainShape(seed);
+        BiomeMap     biomeMap = new BiomeMap(seed);
+        TerrainShape shape    = new TerrainShape(seed, biomeMap);
         return new GenerationPipeline(List.of(
                 new TerrainStage(shape),
                 new CaveStage(seed),
                 new OreStage(seed),
                 new WaterSettleStage(),
-                new TreeStage(shape, seed, WorldConstants.BLOCK_GRASS)));
+                new TreeStage(shape, seed, WorldConstants.BLOCK_GRASS, biomeMap)));
     }
 
     // Debug-only flat world (kept off the default path): a flat plain capped with a random mix of
