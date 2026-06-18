@@ -34,7 +34,7 @@ class HotbarSelectionSystemTest {
 
     private static PlayerInput input(int scroll, int hotbarSelect) {
         return new PlayerInput(false, false, false, false, false, false, 0f, 0f, false, false,
-                false, scroll, hotbarSelect);
+                false, scroll, hotbarSelect, false);
     }
 
     private int selectedSlot() {
