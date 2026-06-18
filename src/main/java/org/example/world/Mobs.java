@@ -4,6 +4,7 @@ import org.example.components.AiState;
 import org.example.components.ColliderAABB;
 import org.example.components.Gravity;
 import org.example.components.Health;
+import org.example.components.HostileTag;
 import org.example.components.MobType;
 import org.example.components.PathTarget;
 import org.example.components.Position;
@@ -39,6 +40,13 @@ public final class Mobs {
         world.add(mob, new AiState(AiState.Behaviour.IDLE, 0f));
         world.add(mob, new PathTarget(x, y, z));
 
+        return mob;
+    }
+
+    /** Spawns a hostile mob: a normal mob plus the {@link HostileTag} marker. */
+    public static Entity spawnHostile(World world, MobType.Kind kind, float x, float y, float z) {
+        Entity mob = spawn(world, kind, x, y, z);
+        world.add(mob, new HostileTag());
         return mob;
     }
 }

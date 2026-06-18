@@ -312,6 +312,62 @@ public final class WorldConstants {
     public static final int ITEM_WOOL    = 106;
     public static final int ITEM_FEATHER = 107;
 
+    // Hostile mob combat and AI (STEP-31).
+    // Detection range (blocks) within which a hostile mob spots the player.
+    public static final float MOB_DETECTION_RANGE    = 16.0f;
+    // Attack range (blocks): mob must be this close to land a hit.
+    public static final float MOB_ATTACK_RANGE       = 1.5f;
+    // Base damage dealt by a mob per attack.
+    public static final int   MOB_ATTACK_DAMAGE      = 2;
+    // Cooldown (seconds) between mob attacks (i-frames on the player gate this further).
+    public static final float MOB_ATTACK_COOLDOWN    = 1.0f;
+    // How often (seconds) CHASE state recomputes the A* path.
+    public static final float MOB_PATH_RECOMPUTE_INTERVAL = 0.8f;
+    // Maximum node budget for a single A* search (bounds worst-case CPU per mob per tick).
+    public static final int   PATHFINDER_NODE_BUDGET  = 256;
+    // Maximum A* path length in blocks; longer paths are rejected to avoid huge memory use.
+    public static final int   PATHFINDER_MAX_DISTANCE = 32;
+    // Skylight level at or above which an unshielded mob is considered in "high daylight".
+    public static final int   HOSTILE_SPAWN_MAX_LIGHT = 7;
+    // Skylight level at which undead mobs (zombie/skeleton) start burning in sunlight.
+    public static final int   UNDEAD_BURN_SKYLIGHT    = 12;
+    // Damage dealt per fire tick to undead in full sunlight.
+    public static final int   UNDEAD_BURN_DAMAGE      = 1;
+    // How often (seconds) undead burn damage is applied.
+    public static final float UNDEAD_BURN_INTERVAL    = 1.0f;
+    // Horizontal knockback speed (blocks/s) applied to a mob that is hit by the player.
+    public static final float MOB_KNOCKBACK_SPEED     = 6.0f;
+    // Vertical knockback impulse (blocks/s) on mob hit.
+    public static final float MOB_KNOCKBACK_VERTICAL  = 3.0f;
+    // Bare-handed melee damage when the player is not holding a sword.
+    public static final int   PLAYER_FIST_DAMAGE      = 1;
+    // Melee weapon damage for each sword tier (plain int lookup by ToolMaterial ordinal).
+    public static final int   SWORD_DAMAGE_WOOD       = 4;
+    public static final int   SWORD_DAMAGE_STONE      = 5;
+    public static final int   SWORD_DAMAGE_IRON       = 6;
+    public static final int   SWORD_DAMAGE_GOLD       = 4;
+    public static final int   SWORD_DAMAGE_DIAMOND    = 7;
+    // Attack range for the player (distance from eye to eligible mob).
+    public static final float PLAYER_ATTACK_RANGE     = 3.5f;
+    // Minimum cosine between the look direction and the direction to a mob for it to be hit
+    // (~60° cone), so the player strikes what they face rather than mobs behind them.
+    public static final float PLAYER_ATTACK_AIM_DOT   = 0.5f;
+    // Approximate height of a mob's torso above its feet; used as the melee aim point.
+    public static final float MOB_TORSO_HEIGHT        = 0.9f;
+    // Population cap for hostile mobs within the area radius.
+    public static final int   MAX_HOSTILE_PER_AREA    = 20;
+    // Spawn attempt interval for the hostile spawn system (seconds).
+    public static final float HOSTILE_SPAWN_INTERVAL  = 4.0f;
+    // Day fraction boundaries: dayFraction in [0, 0.5) is day; hostile mobs can spawn
+    // any time but require low light; undead burn during full day (frac < 0.45).
+    public static final float UNDEAD_BURN_DAY_MAX     = 0.45f;
+    // Creeper explosion damage (area, future: block destruction is a TODO).
+    public static final int   CREEPER_EXPLOSION_DAMAGE = 49;
+    // Creeper fuse time (seconds) before detonation once within attack range.
+    public static final float CREEPER_FUSE_SECONDS    = 1.5f;
+    // Creeper explosion radius (blocks).
+    public static final float CREEPER_EXPLOSION_RADIUS = 4.0f;
+
     // Passive mob AI (STEP-30).
     // How long (in seconds) a mob stays IDLE before choosing a wander target.
     public static final float MOB_IDLE_MIN_SECONDS   = 2.0f;
@@ -323,6 +379,8 @@ public final class WorldConstants {
     // Horizontal speed while wandering and fleeing.
     public static final float MOB_WANDER_SPEED       = 1.8f;
     public static final float MOB_FLEE_SPEED         = 4.5f;
+    // Horizontal speed of a hostile mob chasing the player (faster than wander, near flee speed).
+    public static final float MOB_CHASE_SPEED        = 3.6f;
     // Radius within which a random wander target is chosen (in blocks, XZ plane).
     public static final float MOB_WANDER_RADIUS      = 8.0f;
     // A mob attempts a 1-block jump when it hits a wall while wandering.

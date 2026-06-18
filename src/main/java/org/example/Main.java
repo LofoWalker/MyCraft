@@ -131,6 +131,9 @@ public class Main {
                 sim.add(new TimeSystem());
                 sim.add(new InputSystem(window, stateHolder));
                 sim.add(new HotbarSelectionSystem());
+                // Combat runs before block interaction: a click on a mob strikes it; otherwise the
+                // click falls through to block breaking.
+                sim.add(new PlayerCombatSystem());
                 sim.add(new BlockInteractionSystem());
                 sim.add(new FluidSystem());
                 sim.add(new BlockGravitySystem());
@@ -145,6 +148,7 @@ public class Main {
                 sim.add(new ItemPickupSystem());
                 sim.add(new MobAiSystem());
                 sim.add(new PassiveSpawnSystem());
+                sim.add(new HostileSpawnSystem());
 
                 render.add(new CameraSystem(window.getAspectRatio()));
                 render.add(sky);
