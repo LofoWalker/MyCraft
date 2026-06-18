@@ -23,6 +23,7 @@ public final class WorldConstants {
     public static final byte BLOCK_IRON    = 7;
     public static final byte BLOCK_DIAMOND = 8;
     public static final byte BLOCK_TORCH   = 9;
+    public static final byte BLOCK_SAND    = 10;
 
     // Lighting (STEP-21). Skylight and blocklight are 4-bit levels packed in one byte per cell; the
     // brightest reachable level is MAX_LIGHT_LEVEL and each block of travel drops the level by one.
@@ -200,7 +201,51 @@ public final class WorldConstants {
     public static final int ITEM_BREAD = 101;
 
     // Highest valid block id; an item id above this is a non-block (e.g. food, tool) and must not be placed.
-    public static final int MAX_BLOCK_ID = BLOCK_TORCH;
+    public static final int MAX_BLOCK_ID = BLOCK_SAND;
+
+    // Biome noise (STEP-34). Two independent low-frequency Perlin maps drive biome selection:
+    // temperature (T) and humidity (H). Low scales keep biome regions wide and transitions smooth.
+    public static final double BIOME_TEMPERATURE_SCALE = 0.0012;
+    public static final double BIOME_HUMIDITY_SCALE    = 0.0014;
+    public static final int    BIOME_NOISE_OCTAVES     = 2;
+
+    // Biome T/H classification thresholds (values in [-1, 1] range of fractal noise output).
+    // Ocean: low temperature (cold) regardless of humidity.
+    // Desert: high temperature, low humidity.
+    // Forest: moderate temperature, high humidity.
+    // Mountains: high temperature, moderate-high humidity (cold peaks handled by ROCK_LEVEL).
+    // Plains: everything else.
+    public static final double BIOME_OCEAN_TEMP_THRESHOLD    = -0.25;
+    public static final double BIOME_DESERT_TEMP_THRESHOLD   =  0.30;
+    public static final double BIOME_DESERT_HUMID_THRESHOLD  =  0.10;
+    public static final double BIOME_FOREST_HUMID_THRESHOLD  =  0.25;
+    public static final double BIOME_MOUNTAIN_TEMP_THRESHOLD =  0.05;
+
+    // Per-biome terrain amplitude modifiers applied on top of base terrain.
+    // Negative = depression (oceans), large positive = tall mountains.
+    public static final double BIOME_OCEAN_BASE_OFFSET     = -20.0;
+    public static final double BIOME_OCEAN_AMPLITUDE_SCALE =  0.3;
+    public static final double BIOME_PLAINS_AMPLITUDE_SCALE = 0.5;
+    public static final double BIOME_FOREST_AMPLITUDE_SCALE = 0.7;
+    public static final double BIOME_DESERT_BASE_OFFSET    =  4.0;
+    public static final double BIOME_DESERT_AMPLITUDE_SCALE = 0.5;
+    public static final double BIOME_MOUNTAIN_BASE_OFFSET  =  10.0;
+    public static final double BIOME_MOUNTAIN_AMPLITUDE_SCALE = 1.5;
+
+    // Blend radius for biome interpolation: how many noise units around a query point contribute
+    // to the weighted average. Larger value = smoother transitions, more computation.
+    public static final double BIOME_BLEND_RADIUS = 0.04;
+
+    // Per-biome tree rarity (1-in-N columns sprouts a tree; higher = sparser).
+    // Desert and ocean have no trees (set to a sentinel too large to match any hash).
+    public static final int TREE_RARITY_FOREST  = 40;
+    public static final int TREE_RARITY_PLAINS  = 200;
+    public static final int TREE_RARITY_NONE    = Integer.MAX_VALUE;
+
+    // Desert sand depth: number of sub-surface sand layers before switching to stone.
+    // Kept at 3 so the block 4 layers below surface is always stone, consistent with
+    // TerrainStageTest.stoneAppearsDeepBelowSurface which checks surface-4.
+    public static final int DESERT_SAND_DEPTH = 3;
 
     // Tool item ids (see world.ItemRegistry for the full table and per-material constants).
     // These mirror ItemRegistry.*  so call-sites in WorldConstants-land don't have to import ItemRegistry.
