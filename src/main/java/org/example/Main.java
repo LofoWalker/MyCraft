@@ -77,6 +77,8 @@ public class Main {
             simScheduler.add(new HotbarSelectionSystem());
             simScheduler.add(new BlockInteractionSystem());
             simScheduler.add(new FluidSystem());
+            simScheduler.add(new BlockGravitySystem());
+            simScheduler.add(new RandomTickSystem());
             simScheduler.add(new FlightControlSystem());
             simScheduler.add(new PhysicsSystem());
             simScheduler.add(new MovementSystem());

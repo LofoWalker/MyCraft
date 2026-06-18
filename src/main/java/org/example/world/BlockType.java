@@ -41,6 +41,8 @@ public enum BlockType {
     OBSIDIAN        (0.10f, 0.08f, 0.15f, true,  50, Tile.OBSIDIAN,       Tile.OBSIDIAN,       Tile.OBSIDIAN,    ToolKind.PICKAXE, 4),
     // Crafting table (id 26): placed by the player; opens a 3×3 crafting grid on right-click.
     CRAFTING_TABLE  (0.55f, 0.36f, 0.15f, 0.40f, 0.26f, 0.13f, true, 3, Tile.CRAFTING_TOP, Tile.CRAFTING_SIDE, Tile.WOOD_TOP, ToolKind.AXE, 0),
+    // Gravel (id 27): gravity-affected like sand; drops when unsupported.
+    GRAVEL          (0.60f, 0.58f, 0.56f, true,   1, Tile.GRAVEL,   Tile.GRAVEL,   Tile.GRAVEL,   ToolKind.SHOVEL,  0),
     UNKNOWN(1.00f, 0.00f, 1.00f, true,  1, Tile.STONE,        Tile.STONE,       Tile.STONE,       ToolKind.NONE,    0);
 
     // Linear tile indices into textures/blocks.png (index = tileY*16 + tileX, top-left origin).
@@ -65,6 +67,8 @@ public enum BlockType {
         // Crafting table: top face shows the 2x2 work surface, sides show the wood texture variant.
         static final int CRAFTING_TOP  = 14;
         static final int CRAFTING_SIDE = 15;
+        // Gravity blocks (STEP-33).
+        static final int GRAVEL        = 16;
     }
 
     private static final int NO_EMISSION = 0;
@@ -134,6 +138,9 @@ public enum BlockType {
     public ToolKind effectiveTool()      { return effectiveTool; }
     public int      requiredMiningLevel(){ return requiredMiningLevel; }
 
+    /** True when this block should fall when the cell directly below it is air or fluid. */
+    public boolean affectedByGravity()  { return this == SAND || this == GRAVEL; }
+
     // Mesh tint multiplied against the sampled atlas texel. Painted blocks tint white (texture shown
     // at full strength); UNKNOWN keeps its magenta so an unmapped id stays visibly wrong in-world.
     private static final float[] WHITE_TINT = { 1f, 1f, 1f };
@@ -144,13 +151,13 @@ public enum BlockType {
 
     // Index order must match the BLOCK_* byte ids in WorldConstants.
     // ids: 0=AIR 1=STONE 2=DIRT 3=GRASS 4=WOOD 5=LEAVES 6=WATER 7=IRON 8=DIAMOND 9=TORCH 10=SAND
-    //      11..17=WATER_FLOW_7..1  18=LAVA  19..24=LAVA_FLOW_6..1  25=OBSIDIAN  26=CRAFTING_TABLE
+    //      11..17=WATER_FLOW_7..1  18=LAVA  19..24=LAVA_FLOW_6..1  25=OBSIDIAN  26=CRAFTING_TABLE  27=GRAVEL
     private static final BlockType[] BY_ID = {
         AIR, STONE, DIRT, GRASS, WOOD, LEAVES, WATER, IRON, DIAMOND, TORCH, SAND,
         WATER_FLOW_7, WATER_FLOW_6, WATER_FLOW_5, WATER_FLOW_4,
         WATER_FLOW_3, WATER_FLOW_2, WATER_FLOW_1,
         LAVA, LAVA_FLOW_6, LAVA_FLOW_5, LAVA_FLOW_4, LAVA_FLOW_3, LAVA_FLOW_2, LAVA_FLOW_1,
-        OBSIDIAN, CRAFTING_TABLE
+        OBSIDIAN, CRAFTING_TABLE, GRAVEL
     };
 
     public static BlockType byId(byte id) {

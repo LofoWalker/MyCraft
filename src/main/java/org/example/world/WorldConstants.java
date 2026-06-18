@@ -235,8 +235,20 @@ public final class WorldConstants {
     public static final int CRAFTING_GRID_SMALL = 2;
     public static final int CRAFTING_GRID_LARGE  = 3;
 
+    // Block gravity (STEP-33). Gravel is the second gravity-affected block after sand; id 27 sits
+    // just above the crafting table (26).
+    public static final byte BLOCK_GRAVEL = 27;
+
     // Highest valid block id; an item id above this is a non-block (e.g. food, tool) and must not be placed.
-    public static final int MAX_BLOCK_ID = BLOCK_CRAFTING_TABLE;
+    public static final int MAX_BLOCK_ID = BLOCK_GRAVEL;
+
+    // Random tick (STEP-33). Number of random cells sampled per chunk per tick.
+    // Low enough to bound CPU cost; high enough that grass spreads visibly over a few seconds.
+    public static final int  RANDOM_TICKS_PER_CHUNK      = 3;
+    // Minimum skylight level required for grass to grow on dirt (same scale as LightEngine 0..15).
+    public static final int  GRASS_GROWTH_LIGHT_THRESHOLD = 9;
+    // Gravity tick interval: move one gravity block per this many simulation ticks (rate-limits chute CPU).
+    public static final int  GRAVITY_TICK_INTERVAL        = 2;
 
     // Biome noise (STEP-34). Two independent low-frequency Perlin maps drive biome selection:
     // temperature (T) and humidity (H). Low scales keep biome regions wide and transitions smooth.
